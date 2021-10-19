@@ -27,9 +27,13 @@ const ActiveDot = styled.span`
 export default function RangeBadge({
   removed,
   inRange,
+  aboveRange,
+  belowRange,
 }: {
   removed: boolean | undefined
   inRange: boolean | undefined
+  aboveRange: boolean | undefined
+  belowRange: boolean | undefined
 }) {
   return (
     <BadgeWrapper>
@@ -47,14 +51,47 @@ export default function RangeBadge({
         <MouseoverTooltip
           text={
             <Trans>
-              The price of this pool is within your selected range. Your position is currently earning fees.
+              The price of this pool is inside of your selected range. Your position is currently earning fees.
             </Trans>
           }
         >
           <Badge variant={BadgeVariant.DEFAULT}>
-            <ActiveDot /> &nbsp;
+            <ActiveDot />
+            &nbsp;
             <BadgeText>
               <Trans>In range</Trans>
+            </BadgeText>
+          </Badge>
+        </MouseoverTooltip>
+      ) : aboveRange ? (
+        <MouseoverTooltip
+          text={
+            <Trans>
+              The price of this pool is above your selected range. Your position is not currently earning fees and may
+              be losing value.
+            </Trans>
+          }
+        >
+          <Badge variant={BadgeVariant.WARNING}>
+            <AlertCircle width={14} height={14} /> &nbsp;
+            <BadgeText>
+              <Trans>Above range</Trans>
+            </BadgeText>
+          </Badge>
+        </MouseoverTooltip>
+      ) : belowRange ? (
+        <MouseoverTooltip
+          text={
+            <Trans>
+              The price of this pool is below your selected range. Your position is not earning fees but may have
+              realized a profit.
+            </Trans>
+          }
+        >
+          <Badge variant={BadgeVariant.WARNING_OUTLINE}>
+            <AlertCircle width={14} height={14} /> &nbsp;
+            <BadgeText>
+              <Trans>Below range</Trans>
             </BadgeText>
           </Badge>
         </MouseoverTooltip>
@@ -62,15 +99,15 @@ export default function RangeBadge({
         <MouseoverTooltip
           text={
             <Trans>
-              The price of this pool is outside of your selected range. Your position is not currently earning fees.
+              The price of this pool is inside of your selected range. Your position is currently earning fees.
             </Trans>
           }
         >
-          <Badge variant={BadgeVariant.WARNING}>
-            <AlertCircle width={14} height={14} />
+          <Badge variant={BadgeVariant.DEFAULT}>
+            <ActiveDot />
             &nbsp;
             <BadgeText>
-              <Trans>Out of range</Trans>
+              <Trans>In range</Trans>
             </BadgeText>
           </Badge>
         </MouseoverTooltip>

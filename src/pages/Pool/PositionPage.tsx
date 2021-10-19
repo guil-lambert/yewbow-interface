@@ -575,7 +575,7 @@ export function PositionPage({
                     <Trans>{new Percent(feeAmount, 1_000_000).toSignificant()}%</Trans>
                   </BadgeText>
                 </Badge>
-                <RangeBadge removed={removed} inRange={inRange} />
+                <RangeBadge removed={removed} inRange={inRange} aboveRange={!above} belowRange={!below} />
               </RowFixed>
               {ownsNFT && (
                 <RowFixed>
@@ -800,7 +800,7 @@ export function PositionPage({
                   </Label>
                   <HideExtraSmall>
                     <>
-                      <RangeBadge removed={removed} inRange={inRange} />
+                      <RangeBadge removed={removed} inRange={inRange} aboveRange={!above} belowRange={!below} />
                       <span style={{ width: '8px' }} />
                     </>
                   </HideExtraSmall>

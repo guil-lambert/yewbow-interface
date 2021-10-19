@@ -1,5 +1,6 @@
 import { Currency, CurrencyAmount, Fraction, Price } from '@uniswap/sdk-core'
 import JSBI from 'jsbi'
+import numbro from 'numbro'
 
 export function formatCurrencyAmount(amount: CurrencyAmount<Currency> | undefined, sigFigs: number) {
   if (!amount) {
@@ -27,4 +28,20 @@ export function formatPrice(price: Price<Currency, Currency> | undefined, sigFig
   }
 
   return price.toSignificant(sigFigs)
+}
+
+// using a currency library here in case we want to add more in future
+export const formatAmount = (num: number | undefined, digits = 2) => {
+  if (num === 0) return '0'
+  if (!num) return '-'
+  if (num < 0.001) {
+    return '<0.001'
+  }
+  return numbro(num).format({
+    mantissa: num > 10000 ? 0 : num > 1000 ? 1 : num < 100 ? 3 : num < 10 ? 4 : digits,
+    abbreviations: {
+      million: 'M',
+      billion: 'B',
+    },
+  })
 }

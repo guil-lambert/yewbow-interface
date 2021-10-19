@@ -171,5 +171,7 @@
     ]
   },
   "license": "GPL-3.0-or-later",
-  "dependencies": {}
+  "dependencies": {
+    "numbro": "^2.3.2"
+  }
 }

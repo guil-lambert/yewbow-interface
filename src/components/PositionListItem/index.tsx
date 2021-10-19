@@ -10,6 +10,7 @@ import { RowBetween } from 'components/Row'
 import { useToken } from 'hooks/Tokens'
 import useIsTickAtLimit from 'hooks/useIsTickAtLimit'
 import { usePool } from 'hooks/usePools'
+import numbro from 'numbro'
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Bound } from 'state/mint/v3/actions'
@@ -20,6 +21,21 @@ import { formatTickPrice } from 'utils/formatTickPrice'
 import { unwrappedToken } from 'utils/unwrappedToken'
 
 import { DAI, USDC, USDT, WBTC, WETH9_EXTENDED } from '../../constants/tokens'
+
+export const formatAmount = (num: number | undefined, digits = 2) => {
+  if (num === 0) return '0'
+  if (!num) return '-'
+  if (num < 0.001) {
+    return '<0.001'
+  }
+  return numbro(num).format({
+    mantissa: num > 10000 ? 0 : num > 1000 ? 1 : num < 100 ? 3 : num < 10 ? 4 : digits,
+    abbreviations: {
+      million: 'M',
+      billion: 'B',
+    },
+  })
+}
 
 const LinkRow = styled(Link)`
   align-items: center;
@@ -79,7 +95,7 @@ const RangeLineItem = styled(DataLineItem)`
   width: 100%;
 
   ${({ theme }) => theme.mediaWidth.upToSmall`
-  background-color: ${({ theme }) => theme.bg2};
+  background-color: ${({ theme }) => theme.bg3};
     border-radius: 12px;
     padding: 8px 0;
 `};
@@ -220,8 +236,22 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
   const currencyBase = base && unwrappedToken(base)
 
   // check if price is within range
-  const outOfRange: boolean = pool ? pool.tickCurrent < tickLower || pool.tickCurrent >= tickUpper : false
+  // const below = pool && typeof tickLower === 'number' ? pool.tickCurrent < tickLower : undefined
+  // const above = pool && typeof tickUpper === 'number' ? pool.tickCurrent >= tickUpper : undefined
 
+  const currentPrice = pool ? 1.0001 ** pool.tickCurrent * 10 ** (pool.token0.decimals - pool.token1.decimals) : 1
+  const formattedPrice = currentPrice ? Math.max(currentPrice, 1 / currentPrice) : 1
+
+  const lowPrice = formatTickPrice(priceLower, tickAtLimit, Bound.UPPER)
+  const highPrice = formatTickPrice(priceUpper, tickAtLimit, Bound.UPPER)
+
+  const below = formattedPrice ? formatAmount(formattedPrice) < lowPrice : undefined
+  const above = formattedPrice ? formatAmount(formattedPrice) >= highPrice : undefined
+  const insideRange = formattedPrice
+    ? formatAmount(formattedPrice) > lowPrice && formatAmount(formattedPrice) <= highPrice
+    : undefined
+
+  //const outOfRange: boolean = pool ? pool.tickCurrent > tickLower || pool.tickCurrent <= tickUpper : false
   const positionSummaryLink = '/pool/' + positionDetails.tokenId
 
   const removed = liquidity?.eq(0)
@@ -234,26 +264,14 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
           <DataText>
             &nbsp;{currencyQuote?.symbol}&nbsp;/&nbsp;{currencyBase?.symbol}
           </DataText>
-          &nbsp;
           <Badge>
             <BadgeText>
               <Trans>{new Percent(feeAmount, 1_000_000).toSignificant()}%</Trans>
             </BadgeText>
           </Badge>
-        </PrimaryPositionIdData>
-        <RangeBadge removed={removed} inRange={!outOfRange} />
-      </RowBetween>
-
-      {priceLower && priceUpper ? (
-        <RangeLineItem>
+          &nbsp;
           <RangeText>
-            <ExtentsText>
-              <Trans>Min: </Trans>
-            </ExtentsText>
-            <Trans>
-              {formatTickPrice(priceLower, tickAtLimit, Bound.LOWER)} <HoverInlineText text={currencyQuote?.symbol} />{' '}
-              per <HoverInlineText text={currencyBase?.symbol ?? ''} />
-            </Trans>
+            <Trans>{formatTickPrice(priceLower, tickAtLimit, Bound.LOWER)}</Trans>
           </RangeText>{' '}
           <HideSmall>
             <DoubleArrow>⟷</DoubleArrow>{' '}
@@ -262,15 +280,25 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
             <DoubleArrow>⟷</DoubleArrow>{' '}
           </SmallOnly>
           <RangeText>
-            <ExtentsText>
-              <Trans>Max:</Trans>
-            </ExtentsText>
-            <Trans>
-              {formatTickPrice(priceUpper, tickAtLimit, Bound.UPPER)} <HoverInlineText text={currencyQuote?.symbol} />{' '}
-              per <HoverInlineText maxCharacters={10} text={currencyBase?.symbol} />
-            </Trans>
+            <Trans>{formatTickPrice(priceUpper, tickAtLimit, Bound.UPPER)}</Trans>
           </RangeText>
-        </RangeLineItem>
+        </PrimaryPositionIdData>
+        <RangeText>
+          <ExtentsText>
+            <Trans>Current Price:</Trans>
+          </ExtentsText>
+          <Trans>
+            {formatAmount(formattedPrice)} {''}
+            <HoverInlineText text={currencyQuote?.symbol} /> per{' '}
+            <HoverInlineText maxCharacters={10} text={currencyBase?.symbol} />
+          </Trans>
+        </RangeText>
+        <RangeBadge removed={removed} inRange={insideRange} belowRange={below} aboveRange={above} />
+      </RowBetween>
+      {priceLower && priceUpper ? (
+        <RowBetween>
+          <RangeLineItem></RangeLineItem>
+        </RowBetween>
       ) : (
         <Loader />
       )}

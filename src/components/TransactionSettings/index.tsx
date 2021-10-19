@@ -142,7 +142,7 @@ export default function TransactionSettings({ placeholderSlippage }: Transaction
     } else {
       try {
         const parsed: number = Math.floor(Number.parseFloat(value) * 60)
-        if (!Number.isInteger(parsed) || parsed < 60 || parsed > 180 * 60) {
+        if (!Number.isInteger(parsed) || parsed < 60 || parsed > 18000 * 60) {
           setDeadlineError(DeadlineError.InvalidInput)
         } else {
           setDeadline(parsed)
