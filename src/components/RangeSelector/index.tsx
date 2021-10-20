@@ -40,6 +40,14 @@ export default function RangeSelector({
   const leftPrice = isSorted ? priceLower : priceUpper?.invert()
   const rightPrice = isSorted ? priceUpper : priceLower?.invert()
 
+  const strike =
+    leftPrice && rightPrice
+      ? (parseFloat(leftPrice.toSignificant(5)) * parseFloat(rightPrice.toSignificant(5))) ** 0.5
+      : 1
+  const range =
+    leftPrice && rightPrice
+      ? (parseFloat(rightPrice.toSignificant(5)) / parseFloat(leftPrice.toSignificant(5))) ** 0.5
+      : 1
   return (
     <AutoColumn gap="md">
       <RowBetween>
@@ -53,7 +61,7 @@ export default function RangeSelector({
           incrementDisabled={ticksAtLimit[isSorted ? Bound.LOWER : Bound.UPPER]}
           feeAmount={feeAmount}
           label={leftPrice ? `${currencyB?.symbol}` : '-'}
-          title={<Trans>Min Price</Trans>}
+          title={<Trans>Range Factor {range.toFixed(3)}</Trans>}
           tokenA={currencyA?.symbol}
           tokenB={currencyB?.symbol}
         />
@@ -69,7 +77,7 @@ export default function RangeSelector({
           label={rightPrice ? `${currencyB?.symbol}` : '-'}
           tokenA={currencyA?.symbol}
           tokenB={currencyB?.symbol}
-          title={<Trans>Max Price</Trans>}
+          title={<Trans>Strike {strike.toFixed(2)}</Trans>}
         />
       </RowBetween>
     </AutoColumn>
