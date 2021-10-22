@@ -26,6 +26,7 @@ import { useActiveWeb3React } from 'hooks/web3'
 import { useCallback, useMemo, useState } from 'react'
 import ReactGA from 'react-ga'
 import { Link, RouteComponentProps } from 'react-router-dom'
+import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Bound } from 'state/mint/v3/actions'
 import { useSingleCallResult } from 'state/multicall/hooks'
 import { useIsTransactionPending, useTransactionAdder } from 'state/transactions/hooks'
@@ -438,6 +439,15 @@ export function PositionPage({
     )
   }
 
+  const fees = fiatValueOfFees ? parseFloat(fiatValueOfFees.toFixed(2)) : 0
+  const liqFiatValue = fiatValueOfLiquidity ? parseFloat(fiatValueOfLiquidity.toFixed(2)) : 0
+  const Pa = priceLower ? parseFloat(formatTickPrice(priceLower, tickAtLimit, Bound.LOWER)) : 0
+  const Pb = priceUpper ? parseFloat(formatTickPrice(priceUpper, tickAtLimit, Bound.UPPER)) : 0
+  const Pc = pool ? (inverted ? parseFloat(pool.token1Price.toFixed(6)) : parseFloat(pool.token0Price.toFixed(6))) : 0
+  const strike = (Pb * Pa) ** 0.5
+  const r = (Pb / Pa) ** 0.5
+  const dp = Pb - Pa
+  const baseValue = (2 * strike * (r ** 0.5 - 1)) / (r - 1)
   const onOptimisticChain = chainId && [SupportedChainId.OPTIMISM, SupportedChainId.OPTIMISTIC_KOVAN].includes(chainId)
   const showCollectAsWeth = Boolean(
     ownsNFT &&
@@ -448,6 +458,116 @@ export function PositionPage({
       !collectMigrationHash &&
       !onOptimisticChain
   )
+  const data = [
+    {
+      name: (Pa - (5 * dp) / 5).toFixed(2),
+      x: Pa - (5 * dp) / 5,
+      y: Pa - (5 * dp) / 5 + fees / liqFiatValue - baseValue,
+    },
+    {
+      name: (Pa - (4 * dp) / 5).toFixed(2),
+      x: Pa - (4 * dp) / 5,
+      y: Pa - (4 * dp) / 5 + fees / liqFiatValue - baseValue,
+    },
+    {
+      name: (Pa - (3 * dp) / 5).toFixed(2),
+      x: Pa - (3 * dp) / 5,
+      y: Pa - (3 * dp) / 5 + fees / liqFiatValue - baseValue,
+    },
+    {
+      name: (Pa - (2 * dp) / 5).toFixed(2),
+      x: Pa - (2 * dp) / 5,
+      y: Pa - (2 * dp) / 5 + fees / liqFiatValue - baseValue,
+    },
+    {
+      name: (Pa - (1 * dp) / 5).toFixed(2),
+      x: Pa - dp / 5,
+      y: Pa - dp / 5 + fees / liqFiatValue - baseValue,
+    },
+    {
+      name: Pa.toFixed(2),
+      x: Pa,
+      y: Pa + fees / liqFiatValue - baseValue,
+    },
+    {
+      name: (Pa + dp / 5).toFixed(2),
+      x: Pa + dp / 5,
+      y: (2 * (strike * (Pa + dp / 5) * r) ** 0.5 - strike - Pa - dp / 5) / (r - 1) + fees / liqFiatValue - baseValue,
+    },
+    {
+      name: (Pa + (2 * dp) / 5).toFixed(2),
+      x: Pa + (2 * dp) / 5,
+      y:
+        (2 * (strike * (Pa + (2 * dp) / 5) * r) ** 0.5 - strike - Pa - (2 * dp) / 5) / (r - 1) +
+        fees / liqFiatValue -
+        baseValue,
+    },
+    {
+      name: (Pa + (3 * dp) / 5).toFixed(2),
+      x: Pa + (3 * dp) / 5,
+      y:
+        (2 * (strike * (Pa + (3 * dp) / 5) * r) ** 0.5 - strike - Pa - (3 * dp) / 5) / (r - 1) +
+        fees / liqFiatValue -
+        baseValue,
+    },
+    {
+      name: (Pa + (4 * dp) / 5).toFixed(2),
+      x: Pa + (4 * dp) / 5,
+      y:
+        (2 * (strike * (Pa + (4 * dp) / 5) * r) ** 0.5 - strike - Pa - (4 * dp) / 5) / (r - 1) +
+        fees / liqFiatValue -
+        baseValue,
+    },
+    {
+      name: (Pa + (5 * dp) / 5).toFixed(2),
+      x: Pa + (5 * dp) / 5,
+      y:
+        (2 * (strike * (Pa + (5 * dp) / 5) * r) ** 0.5 - strike - Pa - (5 * dp) / 5) / (r - 1) +
+        fees / liqFiatValue -
+        baseValue,
+    },
+    {
+      name: (Pb + (1 * dp) / 5).toFixed(2),
+      x: Pb + (1 * dp) / 5,
+      y: strike + fees / liqFiatValue - baseValue,
+    },
+    {
+      name: (Pb + (2 * dp) / 5).toFixed(2),
+      x: Pb + (2 * dp) / 5,
+      y: strike + fees / liqFiatValue - baseValue,
+    },
+    {
+      name: (Pb + (3 * dp) / 5).toFixed(2),
+      x: Pb + (3 * dp) / 5,
+      y: strike + fees / liqFiatValue - baseValue,
+    },
+    {
+      name: (Pb + (4 * dp) / 5).toFixed(2),
+      x: Pb + (4 * dp) / 5,
+      y: strike + fees / liqFiatValue - baseValue,
+    },
+    {
+      name: (Pb + (5 * dp) / 5).toFixed(2),
+      x: Pb + (5 * dp) / 5,
+      y: strike + fees / liqFiatValue - baseValue,
+    },
+  ]
+
+  const gradientOffset = () => {
+    const dataMax = Math.max(...data.map((i) => i.y))
+    const dataMin = Math.min(...data.map((i) => i.y))
+
+    if (dataMax <= 0) {
+      return 0
+    }
+    if (dataMin >= 0) {
+      return 1
+    }
+
+    return dataMax / (dataMax - dataMin)
+  }
+
+  const off = gradientOffset()
 
   return loading || poolState === PoolState.LOADING || !feeAmount ? (
     <LoadingRows>
@@ -544,12 +664,31 @@ export function PositionPage({
                   marginRight: '12px',
                 }}
               >
-                <div style={{ marginRight: 12 }}>Test</div>
-                {typeof chainId === 'number' && owner && !ownsNFT ? (
-                  <ExternalLink href={getExplorerLink(chainId, owner, ExplorerDataType.ADDRESS)}>
-                    <Trans>Owner</Trans>
-                  </ExternalLink>
-                ) : null}
+                <div style={{ marginRight: 12 }}>
+                  <AreaChart
+                    width={400}
+                    height={250}
+                    data={data}
+                    margin={{
+                      top: 10,
+                      right: 30,
+                      left: 0,
+                      bottom: 0,
+                    }}
+                  >
+                    <XAxis dataKey="name" label={{ value: 'Price', position: 'insideBottom', offset: 40 }} />
+                    <YAxis dataKey="y" label={{ value: 'PL', angle: -90, position: 'insideLeft', offset: 20 }} />
+                    <Tooltip />
+                    <defs>
+                      <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset={off} stopColor="green" stopOpacity={1} />
+                        <stop offset={off} stopColor="red" stopOpacity={1} />
+                      </linearGradient>
+                    </defs>
+                    <Area type="monotone" dataKey="y" stroke="#000" fill="url(#splitColor)" />
+                    <Line type="linear" dataKey="y" stroke="#000" />
+                  </AreaChart>
+                </div>
               </DarkCard>
             ) : (
               <DarkCard

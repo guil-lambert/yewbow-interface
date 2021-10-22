@@ -49,6 +49,7 @@
     "@types/react-virtualized-auto-sizer": "^1.0.0",
     "@types/react-window": "^1.8.2",
     "@types/rebass": "^4.0.7",
+    "@types/recharts": "^1.8.22",
     "@types/styled-components": "^5.1.0",
     "@types/testing-library__cypress": "^5.0.5",
     "@types/ua-parser-js": "^0.7.35",
@@ -102,6 +103,7 @@
     "polished": "^3.3.2",
     "polyfill-object.fromentries": "^1.0.1",
     "prettier": "^2.2.1",
+    "prop-types": "^15.6.0",
     "qs": "^6.9.4",
     "react": "^17.0.1",
     "react-confetti": "^6.0.0",
@@ -173,5 +175,6 @@
   },
   "license": "GPL-3.0-or-later",
   "dependencies": {
+    "recharts": "^2.1.4"
   }
 }
