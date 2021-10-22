@@ -23,7 +23,7 @@ import useUSDCPrice from 'hooks/useUSDCPrice'
 import { useV3PositionFees } from 'hooks/useV3PositionFees'
 import { useV3PositionFromTokenId } from 'hooks/useV3Positions'
 import { useActiveWeb3React } from 'hooks/web3'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import ReactGA from 'react-ga'
 import { Link, RouteComponentProps } from 'react-router-dom'
 import { Bound } from 'state/mint/v3/actions'
@@ -127,23 +127,6 @@ const ResponsiveButtonPrimary = styled(ButtonPrimary)`
   `};
 `
 
-const NFTGrid = styled.div`
-  display: grid;
-  grid-template: 'overlap';
-  min-height: 400px;
-`
-
-const NFTCanvas = styled.canvas`
-  grid-area: overlap;
-`
-
-const NFTImage = styled.img`
-  grid-area: overlap;
-  height: 400px;
-  /* Ensures SVG appears on top of canvas. */
-  z-index: 1;
-`
-
 function CurrentPriceCard({
   inverted,
   pool,
@@ -226,65 +209,6 @@ function getRatio(
   } catch {
     return undefined
   }
-}
-
-// snapshots a src img into a canvas
-function getSnapshot(src: HTMLImageElement, canvas: HTMLCanvasElement, targetHeight: number) {
-  const context = canvas.getContext('2d')
-
-  if (context) {
-    let { width, height } = src
-
-    // src may be hidden and not have the target dimensions
-    const ratio = width / height
-    height = targetHeight
-    width = Math.round(ratio * targetHeight)
-
-    // Ensure crispness at high DPIs
-    canvas.width = width * devicePixelRatio
-    canvas.height = height * devicePixelRatio
-    canvas.style.width = width + 'px'
-    canvas.style.height = height + 'px'
-    context.scale(devicePixelRatio, devicePixelRatio)
-
-    context.clearRect(0, 0, width, height)
-    context.drawImage(src, 0, 0, width, height)
-  }
-}
-
-function NFT({ image, height: targetHeight }: { image: string; height: number }) {
-  const [animate, setAnimate] = useState(false)
-
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const imageRef = useRef<HTMLImageElement>(null)
-
-  return (
-    <NFTGrid
-      onMouseEnter={() => {
-        setAnimate(true)
-      }}
-      onMouseLeave={() => {
-        // snapshot the current frame so the transition to the canvas is smooth
-        if (imageRef.current && canvasRef.current) {
-          getSnapshot(imageRef.current, canvasRef.current, targetHeight)
-        }
-        setAnimate(false)
-      }}
-    >
-      <NFTCanvas ref={canvasRef} />
-      <NFTImage
-        ref={imageRef}
-        src={image}
-        hidden={!animate}
-        onLoad={() => {
-          // snapshot for the canvas
-          if (imageRef.current && canvasRef.current) {
-            getSnapshot(imageRef.current, canvasRef.current, targetHeight)
-          }
-        }}
-      />
-    </NFTGrid>
-  )
 }
 
 const useInverter = ({
@@ -620,9 +544,7 @@ export function PositionPage({
                   marginRight: '12px',
                 }}
               >
-                <div style={{ marginRight: 12 }}>
-                  <NFT image={metadata.result.image} height={400} />
-                </div>
+                <div style={{ marginRight: 12 }}>Test</div>
                 {typeof chainId === 'number' && owner && !ownsNFT ? (
                   <ExternalLink href={getExplorerLink(chainId, owner, ExplorerDataType.ADDRESS)}>
                     <Trans>Owner</Trans>
