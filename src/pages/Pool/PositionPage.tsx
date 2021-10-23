@@ -26,7 +26,20 @@ import { useActiveWeb3React } from 'hooks/web3'
 import { useCallback, useMemo, useState } from 'react'
 import ReactGA from 'react-ga'
 import { Link, RouteComponentProps } from 'react-router-dom'
-import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ReferenceArea,
+  ReferenceLine,
+  ResponsiveContainer,
+  Scatter,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import { Bound } from 'state/mint/v3/actions'
 import { useSingleCallResult } from 'state/multicall/hooks'
 import { useIsTransactionPending, useTransactionAdder } from 'state/transactions/hooks'
@@ -284,7 +297,7 @@ export function PositionPage({
   const tickAtLimit = useIsTickAtLimit(feeAmount, tickLower, tickUpper)
 
   const pricesFromPosition = getPriceOrderingFromPositionForUI(position)
-  const [manuallyInverted, setManuallyInverted] = useState(false)
+  const [manuallyInverted, setManuallyInverted] = useState(true)
 
   // handle manual inversion
   const { priceLower, priceUpper, base } = useInverter({
@@ -445,9 +458,19 @@ export function PositionPage({
   const Pb = priceUpper ? parseFloat(formatTickPrice(priceUpper, tickAtLimit, Bound.UPPER)) : 0
   const Pc = pool ? (inverted ? parseFloat(pool.token1Price.toFixed(6)) : parseFloat(pool.token0Price.toFixed(6))) : 0
   const strike = (Pb * Pa) ** 0.5
-  const r = (Pb / Pa) ** 0.5
-  const dp = Pb - Pa
-  const baseValue = (2 * strike * (r ** 0.5 - 1)) / (r - 1)
+  const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
+  const dp = Pb > Pa ? Pb - Pa : Pa - Pb
+  const baseValue = (2 * (strike * Pa * r) ** 0.5 - strike - Pa) / (r - 1)
+  const LiqValueTotal = position
+    ? inverted
+      ? parseFloat(position?.amount0.toSignificant(4)) + parseFloat(position?.amount1.toSignificant(4)) * Pc
+      : parseFloat(position?.amount1.toSignificant(4)) + parseFloat(position?.amount0.toSignificant(4)) * Pc
+    : 0
+  const feeValueTotal =
+    feeValueUpper && feeValueLower
+      ? parseFloat(formatCurrencyAmount(feeValueUpper, 4)) + parseFloat(formatCurrencyAmount(feeValueLower, 4)) * Pc
+      : 0
+  const topFees = strike + (strike * feeValueTotal) / LiqValueTotal - baseValue
   const onOptimisticChain = chainId && [SupportedChainId.OPTIMISM, SupportedChainId.OPTIMISTIC_KOVAN].includes(chainId)
   const showCollectAsWeth = Boolean(
     ownsNFT &&
@@ -460,46 +483,34 @@ export function PositionPage({
   )
   const data = [
     {
-      name: (Pa - (5 * dp) / 5).toFixed(2),
+      name: baseValue,
+      x: Pa - (15 * dp) / 5,
+      y: Pa - (15 * dp) / 5 + (strike * feeValueTotal) / LiqValueTotal - baseValue,
+    },
+    {
+      name: fees,
       x: Pa - (5 * dp) / 5,
-      y: Pa - (5 * dp) / 5 + fees / liqFiatValue - baseValue,
+      y: Pa - (5 * dp) / 5 + (strike * feeValueTotal) / LiqValueTotal - baseValue,
     },
     {
-      name: (Pa - (4 * dp) / 5).toFixed(2),
-      x: Pa - (4 * dp) / 5,
-      y: Pa - (4 * dp) / 5 + fees / liqFiatValue - baseValue,
-    },
-    {
-      name: (Pa - (3 * dp) / 5).toFixed(2),
-      x: Pa - (3 * dp) / 5,
-      y: Pa - (3 * dp) / 5 + fees / liqFiatValue - baseValue,
-    },
-    {
-      name: (Pa - (2 * dp) / 5).toFixed(2),
-      x: Pa - (2 * dp) / 5,
-      y: Pa - (2 * dp) / 5 + fees / liqFiatValue - baseValue,
-    },
-    {
-      name: (Pa - (1 * dp) / 5).toFixed(2),
-      x: Pa - dp / 5,
-      y: Pa - dp / 5 + fees / liqFiatValue - baseValue,
-    },
-    {
-      name: Pa.toFixed(2),
+      name: liqFiatValue,
       x: Pa,
-      y: Pa + fees / liqFiatValue - baseValue,
+      y: Pa + (strike * feeValueTotal) / LiqValueTotal - baseValue,
     },
     {
       name: (Pa + dp / 5).toFixed(2),
       x: Pa + dp / 5,
-      y: (2 * (strike * (Pa + dp / 5) * r) ** 0.5 - strike - Pa - dp / 5) / (r - 1) + fees / liqFiatValue - baseValue,
+      y:
+        (2 * (strike * (Pa + dp / 5) * r) ** 0.5 - strike - Pa - dp / 5) / (r - 1) +
+        (strike * feeValueTotal) / LiqValueTotal -
+        baseValue,
     },
     {
       name: (Pa + (2 * dp) / 5).toFixed(2),
       x: Pa + (2 * dp) / 5,
       y:
         (2 * (strike * (Pa + (2 * dp) / 5) * r) ** 0.5 - strike - Pa - (2 * dp) / 5) / (r - 1) +
-        fees / liqFiatValue -
+        (strike * feeValueTotal) / LiqValueTotal -
         baseValue,
     },
     {
@@ -507,7 +518,7 @@ export function PositionPage({
       x: Pa + (3 * dp) / 5,
       y:
         (2 * (strike * (Pa + (3 * dp) / 5) * r) ** 0.5 - strike - Pa - (3 * dp) / 5) / (r - 1) +
-        fees / liqFiatValue -
+        (strike * feeValueTotal) / LiqValueTotal -
         baseValue,
     },
     {
@@ -515,7 +526,7 @@ export function PositionPage({
       x: Pa + (4 * dp) / 5,
       y:
         (2 * (strike * (Pa + (4 * dp) / 5) * r) ** 0.5 - strike - Pa - (4 * dp) / 5) / (r - 1) +
-        fees / liqFiatValue -
+        (strike * feeValueTotal) / LiqValueTotal -
         baseValue,
     },
     {
@@ -523,36 +534,49 @@ export function PositionPage({
       x: Pa + (5 * dp) / 5,
       y:
         (2 * (strike * (Pa + (5 * dp) / 5) * r) ** 0.5 - strike - Pa - (5 * dp) / 5) / (r - 1) +
-        fees / liqFiatValue -
+        (strike * feeValueTotal) / LiqValueTotal -
         baseValue,
     },
     {
-      name: (Pb + (1 * dp) / 5).toFixed(2),
-      x: Pb + (1 * dp) / 5,
-      y: strike + fees / liqFiatValue - baseValue,
-    },
-    {
-      name: (Pb + (2 * dp) / 5).toFixed(2),
-      x: Pb + (2 * dp) / 5,
-      y: strike + fees / liqFiatValue - baseValue,
-    },
-    {
-      name: (Pb + (3 * dp) / 5).toFixed(2),
-      x: Pb + (3 * dp) / 5,
-      y: strike + fees / liqFiatValue - baseValue,
-    },
-    {
-      name: (Pb + (4 * dp) / 5).toFixed(2),
-      x: Pb + (4 * dp) / 5,
-      y: strike + fees / liqFiatValue - baseValue,
-    },
-    {
-      name: (Pb + (5 * dp) / 5).toFixed(2),
-      x: Pb + (5 * dp) / 5,
-      y: strike + fees / liqFiatValue - baseValue,
+      name: (Pb + (10 * dp) / 5).toFixed(2),
+      x: Pb + (10 * dp) / 5,
+      y: strike + (strike * feeValueTotal) / LiqValueTotal - baseValue,
     },
   ]
-
+  const dataPa = [
+    {
+      x: Pa,
+      y: Pa - (15 * dp) / 5 + (strike * feeValueTotal) / LiqValueTotal - baseValue,
+    },
+    {
+      x: Pa,
+      y: strike + (2 * strike * feeValueTotal) / LiqValueTotal - baseValue,
+    },
+  ]
+  const dataPb = [
+    {
+      x: Pb,
+      y: Pa - (15 * dp) / 5 + (strike * feeValueTotal) / LiqValueTotal - baseValue,
+    },
+    {
+      x: Pb,
+      y: strike + (2 * strike * feeValueTotal) / LiqValueTotal - baseValue,
+    },
+  ]
+  const dataPc = [
+    {
+      name: Pc.toFixed(2),
+      x: Pc,
+      y:
+        Pc < Pb && Pc > Pa
+          ? (2 * (strike * Pc * r) ** 0.5 - strike - Pc) / (r - 1) +
+            (strike * feeValueTotal) / LiqValueTotal -
+            baseValue
+          : Pc < Pa
+          ? Pc + (strike * feeValueTotal) / LiqValueTotal - baseValue
+          : strike + (strike * feeValueTotal) / LiqValueTotal - baseValue,
+    },
+  ]
   const gradientOffset = () => {
     const dataMax = Math.max(...data.map((i) => i.y))
     const dataMin = Math.min(...data.map((i) => i.y))
@@ -665,20 +689,33 @@ export function PositionPage({
                 }}
               >
                 <div style={{ marginRight: 12 }}>
-                  <AreaChart
-                    width={400}
-                    height={250}
+                  <ComposedChart
+                    width={350}
+                    height={350}
                     data={data}
                     margin={{
-                      top: 10,
-                      right: 30,
+                      top: 0,
+                      right: 0,
                       left: 0,
                       bottom: 0,
                     }}
                   >
-                    <XAxis dataKey="name" label={{ value: 'Price', position: 'insideBottom', offset: 40 }} />
-                    <YAxis dataKey="y" label={{ value: 'PL', angle: -90, position: 'insideLeft', offset: 20 }} />
-                    <Tooltip />
+                    <XAxis
+                      ticks={[Pa.toFixed(5), Pb.toFixed(5)]}
+                      dataKey="x"
+                      type="number"
+                      domain={[Pa - 3 * dp, Pb + 2 * dp]}
+                      label={{ value: 'Price', position: 'bottom', offset: 0 }}
+                    />
+                    <YAxis
+                      ticks={[0, topFees.toFixed(4)]}
+                      dataKey="y"
+                      domain={[
+                        Pa - 3 * dp + (strike * feeValueTotal) / LiqValueTotal - baseValue,
+                        strike + (2 * strike * feeValueTotal) / LiqValueTotal - baseValue,
+                      ]}
+                      label={{ value: 'PL', angle: -90, position: 'insideLeft', offset: 15 }}
+                    />
                     <defs>
                       <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
                         <stop offset={off} stopColor="green" stopOpacity={1} />
@@ -686,8 +723,13 @@ export function PositionPage({
                       </linearGradient>
                     </defs>
                     <Area type="monotone" dataKey="y" stroke="#000" fill="url(#splitColor)" />
-                    <Line type="linear" dataKey="y" stroke="#000" />
-                  </AreaChart>
+                    <ReferenceLine x={Pa} stroke="#000" strokeDasharray="2 2" />
+                    <ReferenceLine x={Pb} stroke="#000" strokeDasharray="2 2" />
+                    <ReferenceLine y={topFees} stroke="#000" strokeDasharray="1 2" />
+                    <ReferenceLine x={Pc} stroke="#4682b4" label="Price" />
+                    <ReferenceArea x1={Pa} x2={Pb} y1={-100} y2={300} stroke="red" strokeOpacity={0.3} />
+                    <Scatter data={dataPc} dataKey="y" />
+                  </ComposedChart>
                 </div>
               </DarkCard>
             ) : (
@@ -707,7 +749,7 @@ export function PositionPage({
                 <AutoColumn gap="md" style={{ width: '100%' }}>
                   <AutoColumn gap="md">
                     <Label>
-                      <Trans>Liquidity</Trans>
+                      <Trans>Liquidity {LiqValueTotal}</Trans>
                     </Label>
                     {fiatValueOfLiquidity?.greaterThan(new Fraction(1, 100)) ? (
                       <TYPE.largeHeader fontSize="36px" fontWeight={500}>
@@ -761,7 +803,7 @@ export function PositionPage({
                     <RowBetween style={{ alignItems: 'flex-start' }}>
                       <AutoColumn gap="md">
                         <Label>
-                          <Trans>Unclaimed fees</Trans>
+                          <Trans>Unclaimed fees {feeValueTotal}</Trans>
                         </Label>
                         {fiatValueOfFees?.greaterThan(new Fraction(1, 100)) ? (
                           <TYPE.largeHeader color={theme.green1} fontSize="36px" fontWeight={500}>
@@ -867,6 +909,7 @@ export function PositionPage({
                   </HideExtraSmall>
                 </RowFixed>
                 <RowFixed>
+                  Priced asset (typically not ETH):
                   {currencyBase && currencyQuote && (
                     <RateToggle
                       currencyA={currencyBase}
