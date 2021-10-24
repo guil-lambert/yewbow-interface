@@ -54,6 +54,7 @@ import RangeBadge from '../../components/Badge/RangeBadge'
 import { getPriceOrderingFromPositionForUI } from '../../components/PositionListItem'
 import RateToggle from '../../components/RateToggle'
 import { SwitchLocaleLink } from '../../components/SwitchLocaleLink'
+import { WETH9_EXTENDED } from '../../constants/tokens'
 import { usePositionTokenURI } from '../../hooks/usePositionTokenURI'
 import useTheme from '../../hooks/useTheme'
 import { TransactionType } from '../../state/transactions/actions'
@@ -454,23 +455,65 @@ export function PositionPage({
 
   const fees = fiatValueOfFees ? parseFloat(fiatValueOfFees.toFixed(2)) : 0
   const liqFiatValue = fiatValueOfLiquidity ? parseFloat(fiatValueOfLiquidity.toFixed(2)) : 0
-  const Pa = priceLower ? parseFloat(formatTickPrice(priceLower, tickAtLimit, Bound.LOWER)) : 0
-  const Pb = priceUpper ? parseFloat(formatTickPrice(priceUpper, tickAtLimit, Bound.UPPER)) : 0
-  const Pc = pool ? (inverted ? parseFloat(pool.token1Price.toFixed(6)) : parseFloat(pool.token0Price.toFixed(6))) : 0
+  const amtETH =
+    position && chainId
+      ? token1Address == WETH9_EXTENDED[chainId]?.address
+        ? parseFloat(position?.amount1.toSignificant(4))
+        : parseFloat(position?.amount0.toSignificant(4))
+      : 0
+  const amtTok =
+    position && chainId
+      ? token1Address == WETH9_EXTENDED[chainId]?.address
+        ? parseFloat(position?.amount0.toSignificant(4))
+        : parseFloat(position?.amount1.toSignificant(4))
+      : 0
+  const Pa =
+    position && chainId && tickLower && tickUpper && pool
+      ? token1Address == WETH9_EXTENDED[chainId]?.address
+        ? 1.0001 ** tickLower * 10 ** (pool.token0.decimals - pool.token1.decimals)
+        : 1.0001 ** -tickUpper * 10 ** (pool.token1.decimals - pool.token0.decimals)
+      : 0
+  const Pb =
+    position && chainId && tickLower && tickUpper && pool
+      ? token1Address == WETH9_EXTENDED[chainId]?.address
+        ? 1.0001 ** tickUpper * 10 ** (pool.token0.decimals - pool.token1.decimals)
+        : 1.0001 ** -tickLower * 10 ** (pool.token1.decimals - pool.token0.decimals)
+      : 0
+  const Pc =
+    position && chainId && pool
+      ? token1Address == WETH9_EXTENDED[chainId]?.address
+        ? 1.0001 ** pool.tickCurrent * 10 ** (pool.token0.decimals - pool.token1.decimals)
+        : 1.0001 ** -pool.tickCurrent * 10 ** (pool.token1.decimals - pool.token0.decimals)
+      : 0
   const strike = (Pb * Pa) ** 0.5
   const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
   const dp = Pb > Pa ? Pb - Pa : Pa - Pb
-  const baseValue = (2 * (strike * Pa * r) ** 0.5 - strike - Pa) / (r - 1)
-  const LiqValueTotal = position
-    ? inverted
-      ? parseFloat(position?.amount0.toSignificant(4)) + parseFloat(position?.amount1.toSignificant(4)) * Pc
-      : parseFloat(position?.amount1.toSignificant(4)) + parseFloat(position?.amount0.toSignificant(4)) * Pc
+  const startPrice = Pa
+
+  const dL = position
+    ? Pc > Pa && Pc < Pb
+      ? amtETH / (Pc ** 0.5 - Pa ** 0.5)
+      : Pc < Pa
+      ? amtTok / (Pa ** -0.5 - Pb ** -0.5)
+      : amtETH / (Pb ** 0.5 - Pa ** 0.5)
     : 0
-  const feeValueTotal =
-    feeValueUpper && feeValueLower
-      ? parseFloat(formatCurrencyAmount(feeValueUpper, 4)) + parseFloat(formatCurrencyAmount(feeValueLower, 4)) * Pc
+  const dE = (dL * (Pb ** 0.5 - Pa ** 0.5)) / (Pb * Pa) ** 0.5
+  const Pmin = Pc < Pa - dp ? Pc * 0.97 : Pc > Pb + dp ? Pa - (Pc - Pb) : Pa - dp
+  const Pmax = Pc > Pb + dp ? Pc * 1.03 : Pc < Pa - dp ? Pb + (Pa - Pc) : Pb + dp
+  const baseValue = dE * startPrice
+  const LiqValueTotal =
+    position && chainId
+      ? token1Address == WETH9_EXTENDED[chainId]?.address
+        ? parseFloat(position?.amount1.toSignificant(4)) + parseFloat(position?.amount0.toSignificant(4)) * Pc
+        : parseFloat(position?.amount0.toSignificant(4)) + parseFloat(position?.amount1.toSignificant(4)) * Pc
       : 0
-  const topFees = strike + (strike * feeValueTotal) / LiqValueTotal - baseValue
+  const feeValueTotal =
+    feeValue0 && feeValue1 && chainId
+      ? token1Address == WETH9_EXTENDED[chainId]?.address
+        ? parseFloat(feeValue1.toFixed(6)) + parseFloat(feeValue0.toFixed(6)) * Pc
+        : parseFloat(feeValue0.toFixed(6)) + parseFloat(feeValue1.toFixed(6)) * Pc
+      : 0
+  const topFees = dE * strike + feeValueTotal - baseValue
   const onOptimisticChain = chainId && [SupportedChainId.OPTIMISM, SupportedChainId.OPTIMISTIC_KOVAN].includes(chainId)
   const showCollectAsWeth = Boolean(
     ownsNFT &&
@@ -483,98 +526,62 @@ export function PositionPage({
   )
   const data = [
     {
-      name: baseValue,
-      x: Pa - (15 * dp) / 5,
-      y: Pa - (15 * dp) / 5 + (strike * feeValueTotal) / LiqValueTotal - baseValue,
+      x: Pmin,
+      y: dE * Pmin + feeValueTotal - baseValue,
     },
     {
-      name: fees,
-      x: Pa - (5 * dp) / 5,
-      y: Pa - (5 * dp) / 5 + (strike * feeValueTotal) / LiqValueTotal - baseValue,
-    },
-    {
-      name: liqFiatValue,
       x: Pa,
-      y: Pa + (strike * feeValueTotal) / LiqValueTotal - baseValue,
+      y: dE * Pa + feeValueTotal - baseValue,
     },
     {
-      name: (Pa + dp / 5).toFixed(2),
-      x: Pa + dp / 5,
+      x: Pa + (1 * dp) / 5,
       y:
-        (2 * (strike * (Pa + dp / 5) * r) ** 0.5 - strike - Pa - dp / 5) / (r - 1) +
-        (strike * feeValueTotal) / LiqValueTotal -
+        (dE * (2 * (strike * (Pa + (1 * dp) / 5) * r) ** 0.5 - strike - Pa - (1 * dp) / 5)) / (r - 1) +
+        feeValueTotal -
         baseValue,
     },
     {
-      name: (Pa + (2 * dp) / 5).toFixed(2),
       x: Pa + (2 * dp) / 5,
       y:
-        (2 * (strike * (Pa + (2 * dp) / 5) * r) ** 0.5 - strike - Pa - (2 * dp) / 5) / (r - 1) +
-        (strike * feeValueTotal) / LiqValueTotal -
+        (dE * (2 * (strike * (Pa + (2 * dp) / 5) * r) ** 0.5 - strike - Pa - (2 * dp) / 5)) / (r - 1) +
+        feeValueTotal -
         baseValue,
     },
     {
-      name: (Pa + (3 * dp) / 5).toFixed(2),
       x: Pa + (3 * dp) / 5,
       y:
-        (2 * (strike * (Pa + (3 * dp) / 5) * r) ** 0.5 - strike - Pa - (3 * dp) / 5) / (r - 1) +
-        (strike * feeValueTotal) / LiqValueTotal -
+        (dE * (2 * (strike * (Pa + (3 * dp) / 5) * r) ** 0.5 - strike - Pa - (3 * dp) / 5)) / (r - 1) +
+        feeValueTotal -
         baseValue,
     },
     {
-      name: (Pa + (4 * dp) / 5).toFixed(2),
       x: Pa + (4 * dp) / 5,
       y:
-        (2 * (strike * (Pa + (4 * dp) / 5) * r) ** 0.5 - strike - Pa - (4 * dp) / 5) / (r - 1) +
-        (strike * feeValueTotal) / LiqValueTotal -
+        (dE * (2 * (strike * (Pa + (4 * dp) / 5) * r) ** 0.5 - strike - Pa - (4 * dp) / 5)) / (r - 1) +
+        feeValueTotal -
         baseValue,
     },
     {
-      name: (Pa + (5 * dp) / 5).toFixed(2),
       x: Pa + (5 * dp) / 5,
       y:
-        (2 * (strike * (Pa + (5 * dp) / 5) * r) ** 0.5 - strike - Pa - (5 * dp) / 5) / (r - 1) +
-        (strike * feeValueTotal) / LiqValueTotal -
+        (dE * (2 * (strike * (Pa + (5 * dp) / 5) * r) ** 0.5 - strike - Pa - (5 * dp) / 5)) / (r - 1) +
+        feeValueTotal -
         baseValue,
     },
     {
-      name: (Pb + (10 * dp) / 5).toFixed(2),
-      x: Pb + (10 * dp) / 5,
-      y: strike + (strike * feeValueTotal) / LiqValueTotal - baseValue,
-    },
-  ]
-  const dataPa = [
-    {
-      x: Pa,
-      y: Pa - (15 * dp) / 5 + (strike * feeValueTotal) / LiqValueTotal - baseValue,
-    },
-    {
-      x: Pa,
-      y: strike + (2 * strike * feeValueTotal) / LiqValueTotal - baseValue,
-    },
-  ]
-  const dataPb = [
-    {
-      x: Pb,
-      y: Pa - (15 * dp) / 5 + (strike * feeValueTotal) / LiqValueTotal - baseValue,
-    },
-    {
-      x: Pb,
-      y: strike + (2 * strike * feeValueTotal) / LiqValueTotal - baseValue,
+      x: Pmax,
+      y: dE * strike + feeValueTotal - baseValue,
     },
   ]
   const dataPc = [
     {
-      name: Pc.toFixed(2),
       x: Pc,
       y:
         Pc < Pb && Pc > Pa
-          ? (2 * (strike * Pc * r) ** 0.5 - strike - Pc) / (r - 1) +
-            (strike * feeValueTotal) / LiqValueTotal -
-            baseValue
+          ? (dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) + feeValueTotal - baseValue
           : Pc < Pa
-          ? Pc + (strike * feeValueTotal) / LiqValueTotal - baseValue
-          : strike + (strike * feeValueTotal) / LiqValueTotal - baseValue,
+          ? dE * Pc + feeValueTotal - baseValue
+          : dE * strike + feeValueTotal - baseValue,
     },
   ]
   const gradientOffset = () => {
@@ -694,27 +701,32 @@ export function PositionPage({
                     height={350}
                     data={data}
                     margin={{
-                      top: 0,
+                      top: 40,
                       right: 0,
                       left: 0,
                       bottom: 0,
                     }}
                   >
                     <XAxis
-                      ticks={[Pa.toFixed(5), Pb.toFixed(5)]}
                       dataKey="x"
+                      ticks={[Pc.toFixed(5)]}
+                      domain={[Pmin, Pmax]}
                       type="number"
-                      domain={[Pa - 3 * dp, Pb + 2 * dp]}
-                      label={{ value: 'Price', position: 'bottom', offset: 0 }}
+                      label={{ value: 'Price', position: 'insideBottomRight', offset: 0 }}
                     />
                     <YAxis
-                      ticks={[0, topFees.toFixed(4)]}
-                      dataKey="y"
-                      domain={[
-                        Pa - 3 * dp + (strike * feeValueTotal) / LiqValueTotal - baseValue,
-                        strike + (2 * strike * feeValueTotal) / LiqValueTotal - baseValue,
+                      ticks={[
+                        0,
+                        (
+                          (dE * (2 * (strike * Math.min(Pc, Pb) * r) ** 0.5 - strike - Math.min(Pc, Pb))) / (r - 1) +
+                          feeValueTotal -
+                          baseValue
+                        ).toFixed(3),
+                        (dE * strike + feeValueTotal - baseValue).toFixed(3),
                       ]}
-                      label={{ value: 'PL', angle: -90, position: 'insideLeft', offset: 15 }}
+                      dataKey="y"
+                      domain={[dE * Pmin - baseValue, dE * strike * 1.1 + feeValueTotal - baseValue]}
+                      label={{ value: 'PL', angle: -90, position: 'insideTopLeft', offset: 15 }}
                     />
                     <defs>
                       <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
@@ -722,12 +734,32 @@ export function PositionPage({
                         <stop offset={off} stopColor="red" stopOpacity={1} />
                       </linearGradient>
                     </defs>
+                    <ReferenceArea
+                      x1={Pmin}
+                      x2={Pa}
+                      y1={dE * strike + feeValueTotal - baseValue}
+                      y2={dE * strike * 1.1 + feeValueTotal - baseValue}
+                      fillOpacity={0}
+                      label={'100% token'}
+                    />
+                    <ReferenceArea
+                      x1={Pb}
+                      x2={Pmax}
+                      y1={dE * strike + feeValueTotal - baseValue}
+                      y2={dE * strike * 1.1 + feeValueTotal - baseValue}
+                      fillOpacity={0}
+                      label={'100% ETH'}
+                    />
+                    <ReferenceArea
+                      x1={Pa}
+                      x2={Pb}
+                      y1={dE * Pmin - baseValue}
+                      y2={dE * strike * 1.1 + feeValueTotal - baseValue}
+                      fillOpacity={0.5}
+                    />
                     <Area type="monotone" dataKey="y" stroke="#000" fill="url(#splitColor)" />
-                    <ReferenceLine x={Pa} stroke="#000" strokeDasharray="2 2" />
-                    <ReferenceLine x={Pb} stroke="#000" strokeDasharray="2 2" />
-                    <ReferenceLine y={topFees} stroke="#000" strokeDasharray="1 2" />
-                    <ReferenceLine x={Pc} stroke="#4682b4" label="Price" />
-                    <ReferenceArea x1={Pa} x2={Pb} y1={-100} y2={300} stroke="red" strokeOpacity={0.3} />
+                    <ReferenceLine y={dE * strike + feeValueTotal - baseValue} stroke="#000" strokeDasharray="1 2" />
+                    <ReferenceLine y={0} stroke="#000" />
                     <Scatter data={dataPc} dataKey="y" />
                   </ComposedChart>
                 </div>
@@ -749,7 +781,7 @@ export function PositionPage({
                 <AutoColumn gap="md" style={{ width: '100%' }}>
                   <AutoColumn gap="md">
                     <Label>
-                      <Trans>Liquidity {LiqValueTotal}</Trans>
+                      <Trans>Liquidity</Trans>
                     </Label>
                     {fiatValueOfLiquidity?.greaterThan(new Fraction(1, 100)) ? (
                       <TYPE.largeHeader fontSize="36px" fontWeight={500}>
@@ -803,7 +835,7 @@ export function PositionPage({
                     <RowBetween style={{ alignItems: 'flex-start' }}>
                       <AutoColumn gap="md">
                         <Label>
-                          <Trans>Unclaimed fees {feeValueTotal}</Trans>
+                          <Trans>Unclaimed fees</Trans>
                         </Label>
                         {fiatValueOfFees?.greaterThan(new Fraction(1, 100)) ? (
                           <TYPE.largeHeader color={theme.green1} fontSize="36px" fontWeight={500}>
@@ -909,7 +941,6 @@ export function PositionPage({
                   </HideExtraSmall>
                 </RowFixed>
                 <RowFixed>
-                  Priced asset (typically not ETH):
                   {currencyBase && currencyQuote && (
                     <RateToggle
                       currencyA={currencyBase}
