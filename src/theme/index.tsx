@@ -48,8 +48,8 @@ const mediaWidthTemplates: { [width in keyof typeof MEDIA_WIDTHS]: typeof css } 
   {}
 ) as any
 
-const white = '#FFFFFF'
-const black = '#000000'
+const white = '#FBFDFF'
+const black = '#231f20'
 
 function colors(darkMode: boolean): Colors {
   return {
@@ -100,7 +100,7 @@ function colors(darkMode: boolean): Colors {
     green1: darkMode ? '#27AE60' : '#007D35',
     yellow1: '#E3A507',
     yellow2: '#FF8F00',
-    yellow3: '#F3B71E',
+    yellow3: 'hsl(205, 99%, 99%)',
     blue1: darkMode ? '#2172E5' : '#0068FC',
     blue2: darkMode ? '#5199FF' : '#0068FC',
     error: darkMode ? '#FD4040' : '#DF1F38',
@@ -207,7 +207,7 @@ export const TYPE = {
 export const ThemedGlobalStyle = createGlobalStyle`
 html {
   color: ${({ theme }) => theme.text1};
-  background-color: ${({ theme }) => theme.bg1} !important;
+  background-color: ${({ theme }) => theme.yellow3} !important;
 }
 
 a {

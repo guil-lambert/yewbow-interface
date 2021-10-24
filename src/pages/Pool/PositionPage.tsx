@@ -485,6 +485,18 @@ export function PositionPage({
         ? 1.0001 ** pool.tickCurrent * 10 ** (pool.token0.decimals - pool.token1.decimals)
         : 1.0001 ** -pool.tickCurrent * 10 ** (pool.token1.decimals - pool.token0.decimals)
       : 0
+  const LiqValueTotal =
+    position && chainId
+      ? token1Address == WETH9_EXTENDED[chainId]?.address
+        ? parseFloat(position?.amount1.toSignificant(4)) + parseFloat(position?.amount0.toSignificant(4)) * Pc
+        : parseFloat(position?.amount0.toSignificant(4)) + parseFloat(position?.amount1.toSignificant(4)) * Pc
+      : 0
+  const feeValueTotal =
+    feeValue0 && feeValue1 && chainId
+      ? token1Address == WETH9_EXTENDED[chainId]?.address
+        ? parseFloat(feeValue1.toFixed(6)) + parseFloat(feeValue0.toFixed(6)) * Pc
+        : parseFloat(feeValue0.toFixed(6)) + parseFloat(feeValue1.toFixed(6)) * Pc
+      : 0
   const strike = (Pb * Pa) ** 0.5
   const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
   const dp = Pb > Pa ? Pb - Pa : Pa - Pb
@@ -498,21 +510,11 @@ export function PositionPage({
       : amtETH / (Pb ** 0.5 - Pa ** 0.5)
     : 0
   const dE = (dL * (Pb ** 0.5 - Pa ** 0.5)) / (Pb * Pa) ** 0.5
-  const Pmin = Pc < Pa - dp ? Pc * 0.97 : Pc > Pb + dp ? Pa - (Pc - Pb) : Pa - dp
+  const Pe = startPrice - feeValueTotal / dE
+  const Pmin =
+    Pc < Pe ? Pe * 0.95 : Pe < Pa - dp ? Pe * 0.95 : Pc < Pa - dp ? Pc * 0.97 : Pc > Pb + dp ? Pa - (Pc - Pb) : Pa - dp
   const Pmax = Pc > Pb + dp ? Pc * 1.03 : Pc < Pa - dp ? Pb + (Pa - Pc) : Pb + dp
   const baseValue = dE * startPrice
-  const LiqValueTotal =
-    position && chainId
-      ? token1Address == WETH9_EXTENDED[chainId]?.address
-        ? parseFloat(position?.amount1.toSignificant(4)) + parseFloat(position?.amount0.toSignificant(4)) * Pc
-        : parseFloat(position?.amount0.toSignificant(4)) + parseFloat(position?.amount1.toSignificant(4)) * Pc
-      : 0
-  const feeValueTotal =
-    feeValue0 && feeValue1 && chainId
-      ? token1Address == WETH9_EXTENDED[chainId]?.address
-        ? parseFloat(feeValue1.toFixed(6)) + parseFloat(feeValue0.toFixed(6)) * Pc
-        : parseFloat(feeValue0.toFixed(6)) + parseFloat(feeValue1.toFixed(6)) * Pc
-      : 0
   const topFees = dE * strike + feeValueTotal - baseValue
   const onOptimisticChain = chainId && [SupportedChainId.OPTIMISM, SupportedChainId.OPTIMISTIC_KOVAN].includes(chainId)
   const showCollectAsWeth = Boolean(
@@ -575,13 +577,19 @@ export function PositionPage({
   ]
   const dataPc = [
     {
-      x: Pc,
+      name: 'Current Price',
+      x: Pc.toFixed(7),
       y:
         Pc < Pb && Pc > Pa
-          ? (dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) + feeValueTotal - baseValue
+          ? ((dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) + feeValueTotal - baseValue).toFixed(4)
           : Pc < Pa
-          ? dE * Pc + feeValueTotal - baseValue
-          : dE * strike + feeValueTotal - baseValue,
+          ? (dE * Pc + feeValueTotal - baseValue).toFixed(4)
+          : (dE * strike + feeValueTotal - baseValue).toFixed(4),
+    },
+    {
+      name: 'Break even',
+      x: Pe.toFixed(5),
+      y: 0,
     },
   ]
   const gradientOffset = () => {
@@ -697,24 +705,30 @@ export function PositionPage({
               >
                 <div style={{ marginRight: 12 }}>
                   <ComposedChart
-                    width={350}
-                    height={350}
+                    width={375}
+                    height={400}
                     data={data}
                     margin={{
-                      top: 40,
-                      right: 0,
-                      left: 0,
-                      bottom: 0,
+                      top: 50,
+                      right: 10,
+                      left: 10,
+                      bottom: 40,
                     }}
                   >
                     <XAxis
                       dataKey="x"
-                      ticks={[Pc.toFixed(5)]}
+                      name="Price"
+                      textAnchor="end"
+                      interval={0}
+                      tick={{ fontSize: 10, angle: -45 }}
+                      ticks={[Pe.toFixed(5), Pa.toFixed(5), Pc.toFixed(5), Pb.toFixed(5)]}
                       domain={[Pmin, Pmax]}
                       type="number"
                       label={{ value: 'Price', position: 'insideBottomRight', offset: 0 }}
                     />
                     <YAxis
+                      tick={{ fontSize: 10 }}
+                      interval={0}
                       ticks={[
                         0,
                         (
@@ -757,10 +771,11 @@ export function PositionPage({
                       y2={dE * strike * 1.1 + feeValueTotal - baseValue}
                       fillOpacity={0.5}
                     />
-                    <Area type="monotone" dataKey="y" stroke="#000" fill="url(#splitColor)" />
-                    <ReferenceLine y={dE * strike + feeValueTotal - baseValue} stroke="#000" strokeDasharray="1 2" />
+                    <Area type="monotone" dataKey="y" name="PL" stroke="#000" fill="url(#splitColor)" />
+                    <ReferenceLine y={dE * strike + feeValueTotal - baseValue} stroke="#000" strokeDasharray="1 4" />
                     <ReferenceLine y={0} stroke="#000" />
-                    <Scatter data={dataPc} dataKey="y" />
+                    <Scatter data={dataPc} dataKey="name" />
+                    <Tooltip />
                   </ComposedChart>
                 </div>
               </DarkCard>

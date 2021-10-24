@@ -4,7 +4,8 @@ import styled from 'styled-components/macro'
 const Card = styled(Box)<{ width?: string; padding?: string; border?: string; $borderRadius?: string }>`
   width: ${({ width }) => width ?? '100%'};
   padding: ${({ padding }) => padding ?? '1rem'};
-  border-radius: ${({ $borderRadius }) => $borderRadius ?? '16px'};
+  border-radius: ${({ $borderRadius }) => $borderRadius ?? '4px'};
+  box-shadow: ${({ theme }) => theme.bg4} 0 0 2px;
   border: ${({ border }) => border};
 `
 export default Card
