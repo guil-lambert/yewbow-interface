@@ -226,7 +226,6 @@ export default function Pool() {
             <HideSmall>
               <NetworkAlert thin />
               <DowntimeWarning />
-              <CTACards />
             </HideSmall>
 
             <MainContentWrapper>

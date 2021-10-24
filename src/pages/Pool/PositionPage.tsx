@@ -512,7 +512,7 @@ export function PositionPage({
   const dE = (dL * (Pb ** 0.5 - Pa ** 0.5)) / (Pb * Pa) ** 0.5
   const Pe = startPrice - feeValueTotal / dE
   const Pmin =
-    Pc < Pe ? Pe * 0.95 : Pe < Pa - dp ? Pe * 0.95 : Pc < Pa - dp ? Pc * 0.97 : Pc > Pb + dp ? Pa - (Pc - Pb) : Pa - dp
+    Pe < Pc ? Pe * 0.95 : Pe < Pa - dp ? Pe * 0.95 : Pc < Pa - dp ? Pc * 0.97 : Pc > Pb + dp ? Pa - (Pc - Pb) : Pa - dp
   const Pmax = Pc > Pb + dp ? Pc * 1.03 : Pc < Pa - dp ? Pb + (Pa - Pc) : Pb + dp
   const baseValue = dE * startPrice
   const topFees = dE * strike + feeValueTotal - baseValue

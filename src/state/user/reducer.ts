@@ -75,7 +75,7 @@ export const initialState: UserState = {
   arbitrumAlphaAcknowledged: false,
   matchesDarkMode: false,
   optimismAlphaAcknowledged: false,
-  userDarkMode: null,
+  userDarkMode: false,
   userExpertMode: true,
   userLocale: null,
   userClientSideRouter: false,
