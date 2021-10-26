@@ -72,7 +72,7 @@ export default function RangeBadge({
             </Trans>
           }
         >
-          <Badge variant={BadgeVariant.WARNING}>
+          <Badge variant={BadgeVariant.WARNING_OUTLINE}>
             <AlertCircle width={14} height={14} /> &nbsp;
             <BadgeText>
               <Trans>Above range</Trans>
@@ -88,7 +88,7 @@ export default function RangeBadge({
             </Trans>
           }
         >
-          <Badge variant={BadgeVariant.WARNING_OUTLINE}>
+          <Badge variant={BadgeVariant.WARNING}>
             <AlertCircle width={14} height={14} /> &nbsp;
             <BadgeText>
               <Trans>Below range</Trans>

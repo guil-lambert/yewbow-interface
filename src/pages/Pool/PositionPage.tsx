@@ -133,7 +133,7 @@ const ResponsiveRow = styled(RowBetween)`
 `
 
 const ResponsiveButtonPrimary = styled(ButtonPrimary)`
-  border-radius: 12px;
+  border-radius: 4px;
   padding: 6px 8px;
   width: fit-content;
   ${({ theme }) => theme.mediaWidth.upToSmall`
@@ -692,7 +692,7 @@ export function PositionPage({
                       to={`/increase/${currencyId(currency0)}/${currencyId(currency1)}/${feeAmount}/${tokenId}`}
                       width="fit-content"
                       padding="6px 8px"
-                      $borderRadius="12px"
+                      $borderRadius="4px"
                       style={{ marginRight: '8px' }}
                     >
                       <Trans>Increase Liquidity</Trans>
@@ -704,7 +704,7 @@ export function PositionPage({
                       to={`/remove/${tokenId}`}
                       width="fit-content"
                       padding="6px 8px"
-                      $borderRadius="12px"
+                      $borderRadius="4px"
                     >
                       <Trans>Remove Liquidity</Trans>
                     </ResponsiveButtonPrimary>
@@ -822,15 +822,7 @@ export function PositionPage({
                     <Label>
                       <Trans>Liquidity</Trans>
                     </Label>
-                    {fiatValueOfLiquidity?.greaterThan(new Fraction(1, 100)) ? (
-                      <TYPE.largeHeader fontSize="36px" fontWeight={500}>
-                        <Trans>${fiatValueOfLiquidity.toFixed(2, { groupSeparator: ',' })}</Trans>
-                      </TYPE.largeHeader>
-                    ) : (
-                      <TYPE.largeHeader color={theme.text1} fontSize="36px" fontWeight={500}>
-                        <Trans>$-</Trans>
-                      </TYPE.largeHeader>
-                    )}
+                    <Trans>ETH {LiqValueTotal.toFixed(6)}</Trans>
                   </AutoColumn>
                   <LightCard padding="12px 16px">
                     <AutoColumn gap="md">
@@ -876,22 +868,14 @@ export function PositionPage({
                         <Label>
                           <Trans>Unclaimed fees</Trans>
                         </Label>
-                        {fiatValueOfFees?.greaterThan(new Fraction(1, 100)) ? (
-                          <TYPE.largeHeader color={theme.green1} fontSize="36px" fontWeight={500}>
-                            <Trans>${fiatValueOfFees.toFixed(2, { groupSeparator: ',' })}</Trans>
-                          </TYPE.largeHeader>
-                        ) : (
-                          <TYPE.largeHeader color={theme.text1} fontSize="36px" fontWeight={500}>
-                            <Trans>$-</Trans>
-                          </TYPE.largeHeader>
-                        )}
+                        <Trans>ETH {feeValueTotal.toFixed(6)}</Trans>
                       </AutoColumn>
                       {ownsNFT && (feeValue0?.greaterThan(0) || feeValue1?.greaterThan(0) || !!collectMigrationHash) ? (
                         <ButtonConfirmed
                           disabled={collecting || !!collectMigrationHash}
                           confirmed={!!collectMigrationHash && !isCollectPending}
                           width="fit-content"
-                          style={{ borderRadius: '12px' }}
+                          style={{ borderRadius: '4px' }}
                           padding="4px 8px"
                           onClick={() => setShowConfirm(true)}
                         >

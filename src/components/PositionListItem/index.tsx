@@ -39,7 +39,7 @@ export const formatAmount = (num: number | undefined, digits = 2) => {
 
 const LinkRow = styled(Link)`
   align-items: center;
-  border-radius: 20px;
+  border-radius: 7px;
   display: flex;
   cursor: pointer;
   user-select: none;
@@ -96,7 +96,7 @@ const RangeLineItem = styled(DataLineItem)`
 
   ${({ theme }) => theme.mediaWidth.upToSmall`
   background-color: ${({ theme }) => theme.bg3};
-    border-radius: 12px;
+    border-radius: 4px;
     padding: 8px 0;
 `};
 `
@@ -113,7 +113,7 @@ const DoubleArrow = styled.span`
 const RangeText = styled.span`
   /* background-color: ${({ theme }) => theme.bg2}; */
   padding: 0.25rem 0.5rem;
-  border-radius: 8px;
+  border-radius: 2px;
 `
 
 const ExtentsText = styled.span`

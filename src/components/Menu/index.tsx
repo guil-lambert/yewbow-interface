@@ -42,7 +42,7 @@ const StyledMenuButton = styled.button`
   border: 1px solid ${({ theme }) => theme.bg0};
 
   padding: 0.15rem 0.5rem;
-  border-radius: 12px;
+  border-radius: 4px;
 
   :hover,
   :focus {
@@ -79,7 +79,7 @@ const MenuFlyout = styled.span<{ flyoutAlignment?: FlyoutAlignment }>`
   box-shadow: 0px 0px 1px rgba(0, 0, 0, 0.01), 0px 4px 8px rgba(0, 0, 0, 0.04), 0px 16px 24px rgba(0, 0, 0, 0.04),
     0px 24px 32px rgba(0, 0, 0, 0.01);
   border: 1px solid ${({ theme }) => theme.bg0};
-  border-radius: 12px;
+  border-radius: 4px;
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
@@ -272,17 +272,6 @@ export default function Menu() {
                     <div>{darkMode ? <Trans>Light Theme</Trans> : <Trans>Dark Theme</Trans>}</div>
                     {darkMode ? <Moon opacity={0.6} size={16} /> : <Sun opacity={0.6} size={16} />}
                   </ToggleMenuItem>
-                  {showUNIClaimOption && (
-                    <UNIbutton
-                      onClick={openClaimModal}
-                      padding="8px 16px"
-                      width="100%"
-                      $borderRadius="12px"
-                      mt="0.5rem"
-                    >
-                      <Trans>Claim UNI</Trans>
-                    </UNIbutton>
-                  )}
                 </MenuFlyout>
               )
           }

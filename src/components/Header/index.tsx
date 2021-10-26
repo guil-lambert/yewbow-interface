@@ -92,7 +92,7 @@ const HeaderLinks = styled(Row)`
   background-color: ${({ theme }) => theme.bg0};
   width: fit-content;
   padding: 4px;
-  border-radius: 16px;
+  border-radius: 5px;
   display: grid;
   grid-auto-flow: column;
   grid-gap: 10px;
@@ -124,7 +124,7 @@ const AccountElement = styled.div<{ active: boolean }>`
   flex-direction: row;
   align-items: center;
   background-color: ${({ theme, active }) => (!active ? theme.bg1 : theme.bg1)};
-  border-radius: 12px;
+  border-radius: 4px;
   white-space: nowrap;
   width: 100%;
 
@@ -190,7 +190,7 @@ const StyledNavLink = styled(NavLink).attrs({
 })`
   ${({ theme }) => theme.flexRowNoWrap}
   align-items: left;
-  border-radius: 3rem;
+  border-radius: 1rem;
   outline: none;
   cursor: pointer;
   text-decoration: none;
@@ -202,7 +202,7 @@ const StyledNavLink = styled(NavLink).attrs({
   overflow: hidden;
   white-space: nowrap;
   &.${activeClassName} {
-    border-radius: 12px;
+    border-radius: 4px;
     font-weight: 600;
     justify-content: center;
     color: ${({ theme }) => theme.text1};
@@ -220,7 +220,7 @@ const StyledExternalLink = styled(ExternalLink).attrs({
 })<{ isActive?: boolean }>`
   ${({ theme }) => theme.flexRowNoWrap}
   align-items: left;
-  border-radius: 3rem;
+  border-radius: 1rem;
   outline: none;
   cursor: pointer;
   text-decoration: none;
@@ -231,7 +231,7 @@ const StyledExternalLink = styled(ExternalLink).attrs({
   font-weight: 500;
 
   &.${activeClassName} {
-    border-radius: 12px;
+    border-radius: 4px;
     font-weight: 600;
     color: ${({ theme }) => theme.text1};
   }

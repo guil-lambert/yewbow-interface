@@ -17,7 +17,7 @@ export const Wrapper = styled.div`
 
 export const ArrowWrapper = styled.div<{ clickable: boolean }>`
   padding: 4px;
-  border-radius: 12px;
+  border-radius: 4px;
   height: 32px;
   width: 32px;
   position: relative;
@@ -109,7 +109,7 @@ const SwapCallbackErrorInnerAlertTriangle = styled.div`
   align-items: center;
   justify-content: center;
   margin-right: 12px;
-  border-radius: 12px;
+  border-radius: 4px;
   min-width: 48px;
   height: 48px;
 `
@@ -129,7 +129,7 @@ export const SwapShowAcceptChanges = styled(AutoColumn)`
   background-color: ${({ theme }) => transparentize(0.95, theme.primary3)};
   color: ${({ theme }) => theme.primaryText1};
   padding: 0.5rem;
-  border-radius: 12px;
+  border-radius: 4px;
   margin-top: 8px;
 `
 

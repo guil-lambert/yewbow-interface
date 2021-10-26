@@ -115,7 +115,7 @@ const SelectorControls = styled.div<{ interactive: boolean }>`
   align-items: center;
   background-color: ${({ theme }) => theme.bg1};
   border: 2px solid ${({ theme }) => theme.bg1};
-  border-radius: 12px;
+  border-radius: 4px;
   color: ${({ theme }) => theme.text1};
   cursor: ${({ interactive }) => (interactive ? 'pointer' : 'auto')};
   display: flex;
