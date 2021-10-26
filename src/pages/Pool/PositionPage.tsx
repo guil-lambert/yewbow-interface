@@ -997,8 +997,15 @@ export function PositionPage({
                     )}
                   </AutoColumn>
                 </LightCard>
-
-                <DoubleArrow>⟷</DoubleArrow>
+                <AutoColumn gap="18px" justify="center">
+                  <ExtentsText>
+                    <TYPE.small textAlign="center">{r.toFixed(5)}</TYPE.small>
+                  </ExtentsText>
+                  <DoubleArrow>⟷</DoubleArrow>
+                  <ExtentsText>
+                    <TYPE.small textAlign="center">{strike.toFixed(5)}</TYPE.small>
+                  </ExtentsText>
+                </AutoColumn>
                 <LightCard padding="12px" width="100%">
                   <AutoColumn gap="8px" justify="center">
                     <ExtentsText>
