@@ -418,8 +418,18 @@ export function PositionPage({
   const feeValueLower = inverted ? feeValue1 : feeValue0
 
   // check if price is within range
-  const below = pool && typeof tickLower === 'number' ? pool.tickCurrent < tickLower : undefined
-  const above = pool && typeof tickUpper === 'number' ? pool.tickCurrent >= tickUpper : undefined
+  const below =
+    pool && typeof tickLower === 'number' && typeof tickUpper === 'number'
+      ? inverted
+        ? pool.tickCurrent < tickLower
+        : pool.tickCurrent > tickUpper
+      : undefined
+  const above =
+    pool && typeof tickLower === 'number' && typeof tickUpper === 'number'
+      ? inverted
+        ? pool.tickCurrent > tickUpper
+        : pool.tickCurrent < tickLower
+      : undefined
   const inRange: boolean = typeof below === 'boolean' && typeof above === 'boolean' ? !below && !above : false
 
   function modalHeader() {
@@ -455,17 +465,23 @@ export function PositionPage({
 
   const fees = fiatValueOfFees ? parseFloat(fiatValueOfFees.toFixed(2)) : 0
   const liqFiatValue = fiatValueOfLiquidity ? parseFloat(fiatValueOfLiquidity.toFixed(2)) : 0
+  const tokenSymbol =
+    currencyQuote && currencyBase && chainId
+      ? token1Address == WETH9_EXTENDED[chainId]?.address
+        ? currencyQuote.symbol
+        : currencyBase.symbol
+      : ' '
   const amtETH =
     position && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
-        ? parseFloat(position?.amount1.toSignificant(4))
-        : parseFloat(position?.amount0.toSignificant(4))
+        ? parseFloat(position?.amount1.toSignificant(5))
+        : parseFloat(position?.amount0.toSignificant(5))
       : 0
   const amtTok =
     position && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
-        ? parseFloat(position?.amount0.toSignificant(4))
-        : parseFloat(position?.amount1.toSignificant(4))
+        ? parseFloat(position?.amount0.toSignificant(5))
+        : parseFloat(position?.amount1.toSignificant(5))
       : 0
   const Pa =
     position && chainId && tickLower && tickUpper && pool
@@ -512,8 +528,16 @@ export function PositionPage({
   const dE = (dL * (Pb ** 0.5 - Pa ** 0.5)) / (Pb * Pa) ** 0.5
   const Pe = startPrice - feeValueTotal / dE
   const Pmin =
-    Pe < Pc ? Pe * 0.95 : Pe < Pa - dp ? Pe * 0.95 : Pc < Pa - dp ? Pc * 0.97 : Pc > Pb + dp ? Pa - (Pc - Pb) : Pa - dp
-  const Pmax = Pc > Pb + dp ? Pc * 1.03 : Pc < Pa - dp ? Pb + (Pa - Pc) : Pb + dp
+    Pc < Pe
+      ? Pc * 0.95
+      : Pe < Pa - dp
+      ? Pe * 0.95
+      : Pc < Pa - dp
+      ? Pc * 0.95
+      : Pc > Pb + dp
+      ? Pa * 0.95 - (Pc - Pb)
+      : Pa * 0.95 - dp
+  const Pmax = Pc > Pb + dp ? Pc * 1.05 : Pc < Pa - dp ? Pb * 1.05 + (Pa - Pc) : Pb * 1.05 + dp
   const baseValue = dE * startPrice
   const topFees = dE * strike + feeValueTotal - baseValue
   const onOptimisticChain = chainId && [SupportedChainId.OPTIMISM, SupportedChainId.OPTIMISTIC_KOVAN].includes(chainId)
@@ -578,17 +602,17 @@ export function PositionPage({
   const dataPc = [
     {
       name: 'Current Price',
-      x: Pc.toFixed(7),
+      x: Pc.toFixed(8),
       y:
         Pc < Pb && Pc > Pa
-          ? ((dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) + feeValueTotal - baseValue).toFixed(4)
+          ? ((dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) + feeValueTotal - baseValue).toFixed(6)
           : Pc < Pa
-          ? (dE * Pc + feeValueTotal - baseValue).toFixed(4)
-          : (dE * strike + feeValueTotal - baseValue).toFixed(4),
+          ? (dE * Pc + feeValueTotal - baseValue).toFixed(6)
+          : (dE * strike + feeValueTotal - baseValue).toFixed(6),
     },
     {
       name: 'Break even',
-      x: Pe.toFixed(5),
+      x: Pe.toFixed(8),
       y: 0,
     },
   ]
@@ -754,7 +778,7 @@ export function PositionPage({
                       y1={dE * strike + feeValueTotal - baseValue}
                       y2={dE * strike * 1.1 + feeValueTotal - baseValue}
                       fillOpacity={0}
-                      label={'100% token'}
+                      label={'100% ' + tokenSymbol}
                     />
                     <ReferenceArea
                       x1={Pb}

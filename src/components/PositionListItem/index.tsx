@@ -236,8 +236,9 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
   const currencyBase = base && unwrappedToken(base)
 
   // check if price is within range
-  // const below = pool && typeof tickLower === 'number' ? pool.tickCurrent < tickLower : undefined
-  // const above = pool && typeof tickUpper === 'number' ? pool.tickCurrent >= tickUpper : undefined
+  const below = pool && typeof tickLower === 'number' ? pool.tickCurrent < tickLower : undefined
+  const above = pool && typeof tickUpper === 'number' ? pool.tickCurrent >= tickUpper : undefined
+  const inRange: boolean = typeof below === 'boolean' && typeof above === 'boolean' ? !below && !above : false
 
   const currentPrice = pool ? 1.0001 ** pool.tickCurrent * 10 ** (pool.token0.decimals - pool.token1.decimals) : 1
   const formattedPrice = currentPrice ? Math.max(currentPrice, 1 / currentPrice) : 1
@@ -245,8 +246,8 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
   const lowPrice = formatTickPrice(priceLower, tickAtLimit, Bound.UPPER)
   const highPrice = formatTickPrice(priceUpper, tickAtLimit, Bound.UPPER)
 
-  const below = formattedPrice ? formatAmount(formattedPrice) < lowPrice : undefined
-  const above = formattedPrice ? formatAmount(formattedPrice) >= highPrice : undefined
+  //const below = formattedPrice ? formatAmount(formattedPrice) < lowPrice : undefined
+  //const above = formattedPrice ? formatAmount(formattedPrice) >= highPrice : undefined
   const insideRange = formattedPrice
     ? formatAmount(formattedPrice) > lowPrice && formatAmount(formattedPrice) <= highPrice
     : undefined
