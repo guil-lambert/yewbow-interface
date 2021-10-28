@@ -465,6 +465,18 @@ export function PositionPage({
 
   const fees = fiatValueOfFees ? parseFloat(fiatValueOfFees.toFixed(2)) : 0
   const liqFiatValue = fiatValueOfLiquidity ? parseFloat(fiatValueOfLiquidity.toFixed(2)) : 0
+  const currencyETH =
+    currency0 && currency1 && chainId
+      ? token1Address == WETH9_EXTENDED[chainId]?.address
+        ? currency1
+        : currency0
+      : currency1
+  const baseSymbol =
+    currencyQuote && currencyBase && chainId
+      ? token1Address == WETH9_EXTENDED[chainId]?.address
+        ? currencyBase.symbol
+        : currencyQuote.symbol
+      : ' '
   const tokenSymbol =
     currencyQuote && currencyBase && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
@@ -684,33 +696,6 @@ export function PositionPage({
                 </Badge>
                 <RangeBadge removed={removed} inRange={inRange} aboveRange={!above} belowRange={!below} />
               </RowFixed>
-              {ownsNFT && (
-                <RowFixed>
-                  {currency0 && currency1 && feeAmount && tokenId ? (
-                    <ButtonGray
-                      as={Link}
-                      to={`/increase/${currencyId(currency0)}/${currencyId(currency1)}/${feeAmount}/${tokenId}`}
-                      width="fit-content"
-                      padding="6px 8px"
-                      $borderRadius="4px"
-                      style={{ marginRight: '8px' }}
-                    >
-                      <Trans>Increase Liquidity</Trans>
-                    </ButtonGray>
-                  ) : null}
-                  {tokenId && !removed ? (
-                    <ResponsiveButtonPrimary
-                      as={Link}
-                      to={`/remove/${tokenId}`}
-                      width="fit-content"
-                      padding="6px 8px"
-                      $borderRadius="4px"
-                    >
-                      <Trans>Remove Liquidity</Trans>
-                    </ResponsiveButtonPrimary>
-                  ) : null}
-                </RowFixed>
-              )}
             </ResponsiveRow>
             <RowBetween></RowBetween>
           </AutoColumn>
@@ -744,7 +729,8 @@ export function PositionPage({
                       name="Price"
                       textAnchor="end"
                       interval={0}
-                      tick={{ fontSize: 10, angle: -45 }}
+                      angle={-45}
+                      tick={{ fontSize: 10 }}
                       ticks={[Pe.toFixed(5), Pa.toFixed(5), Pc.toFixed(5), Pb.toFixed(5)]}
                       domain={[Pmin, Pmax]}
                       type="number"
@@ -764,7 +750,7 @@ export function PositionPage({
                       ]}
                       dataKey="y"
                       domain={[dE * Pmin - baseValue, dE * strike * 1.1 + feeValueTotal - baseValue]}
-                      label={{ value: 'PL', angle: -90, position: 'insideTopLeft', offset: 15 }}
+                      label={{ value: 'Profit/Loss', angle: -90, position: 'insideLeft', offset: 5 }}
                     />
                     <defs>
                       <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
@@ -778,7 +764,7 @@ export function PositionPage({
                       y1={dE * strike + feeValueTotal - baseValue}
                       y2={dE * strike * 1.1 + feeValueTotal - baseValue}
                       fillOpacity={0}
-                      label={'100% ' + tokenSymbol}
+                      label={'100% token'}
                     />
                     <ReferenceArea
                       x1={Pb}
@@ -822,7 +808,25 @@ export function PositionPage({
                     <Label>
                       <Trans>Liquidity</Trans>
                     </Label>
-                    <Trans>ETH {LiqValueTotal.toFixed(6)}</Trans>
+                    {fiatValueOfLiquidity?.greaterThan(new Fraction(1, 100)) ? (
+                      <TYPE.largeHeader color={theme.green1} fontSize="24px" fontWeight={500}>
+                        <ResponsiveRow>
+                          <RowFixed>
+                            <Trans>${fiatValueOfLiquidity.toFixed(2, { groupSeparator: ',' })}</Trans>
+                          </RowFixed>
+                          <RowFixed>
+                            <Trans>
+                              <CurrencyLogo currency={currencyETH} size={'20px'} style={{ marginRight: '0.5rem' }} />
+                              {LiqValueTotal.toFixed(5)}
+                            </Trans>
+                          </RowFixed>
+                        </ResponsiveRow>
+                      </TYPE.largeHeader>
+                    ) : (
+                      <TYPE.largeHeader color={theme.text1} fontSize="36px" fontWeight={500}>
+                        <Trans>$-</Trans>
+                      </TYPE.largeHeader>
+                    )}
                   </AutoColumn>
                   <LightCard padding="12px 16px">
                     <AutoColumn gap="md">
@@ -858,48 +862,61 @@ export function PositionPage({
                       </RowBetween>
                     </AutoColumn>
                   </LightCard>
+                  {ownsNFT && (
+                    <RowFixed>
+                      {currency0 && currency1 && feeAmount && tokenId ? (
+                        <ButtonGray
+                          as={Link}
+                          to={`/increase/${currencyId(currency0)}/${currencyId(currency1)}/${feeAmount}/${tokenId}`}
+                          width="fit-content"
+                          padding="6px 8px"
+                          $borderRadius="4px"
+                          style={{ marginLeft: '8px', marginRight: '24px' }}
+                        >
+                          <Trans>Increase Liquidity</Trans>
+                        </ButtonGray>
+                      ) : null}
+                      {tokenId && !removed ? (
+                        <ResponsiveButtonPrimary
+                          as={Link}
+                          to={`/remove/${tokenId}`}
+                          width="fit-content"
+                          padding="6px 8px"
+                          $borderRadius="4px"
+                          style={{ marginLeft: '24px', marginRight: '0px' }}
+                        >
+                          <Trans>Remove Liquidity</Trans>
+                        </ResponsiveButtonPrimary>
+                      ) : null}
+                    </RowFixed>
+                  )}
                 </AutoColumn>
               </DarkCard>
               <DarkCard>
                 <AutoColumn gap="md" style={{ width: '100%' }}>
                   <AutoColumn gap="md">
-                    <RowBetween style={{ alignItems: 'flex-start' }}>
-                      <AutoColumn gap="md">
-                        <Label>
-                          <Trans>Unclaimed fees</Trans>
-                        </Label>
-                        <Trans>ETH {feeValueTotal.toFixed(6)}</Trans>
-                      </AutoColumn>
-                      {ownsNFT && (feeValue0?.greaterThan(0) || feeValue1?.greaterThan(0) || !!collectMigrationHash) ? (
-                        <ButtonConfirmed
-                          disabled={collecting || !!collectMigrationHash}
-                          confirmed={!!collectMigrationHash && !isCollectPending}
-                          width="fit-content"
-                          style={{ borderRadius: '4px' }}
-                          padding="4px 8px"
-                          onClick={() => setShowConfirm(true)}
-                        >
-                          {!!collectMigrationHash && !isCollectPending ? (
-                            <TYPE.main color={theme.text1}>
-                              <Trans> Collected</Trans>
-                            </TYPE.main>
-                          ) : isCollectPending || collecting ? (
-                            <TYPE.main color={theme.text1}>
-                              {' '}
-                              <Dots>
-                                <Trans>Collecting</Trans>
-                              </Dots>
-                            </TYPE.main>
-                          ) : (
-                            <>
-                              <TYPE.main color={theme.white}>
-                                <Trans>Collect fees</Trans>
-                              </TYPE.main>
-                            </>
-                          )}
-                        </ButtonConfirmed>
-                      ) : null}
-                    </RowBetween>
+                    <Label>
+                      <Trans>Unclaimed fees</Trans>
+                    </Label>
+                    {fiatValueOfFees?.greaterThan(new Fraction(1, 100)) ? (
+                      <TYPE.largeHeader color={theme.green1} fontSize="24px" fontWeight={500}>
+                        <ResponsiveRow>
+                          <RowFixed>
+                            <Trans>${fiatValueOfFees.toFixed(2, { groupSeparator: ',' })}</Trans>
+                          </RowFixed>
+                          <RowFixed>
+                            <Trans>
+                              <CurrencyLogo currency={currencyETH} size={'20px'} style={{ marginRight: '0.5rem' }} />
+                              {feeValueTotal.toFixed(5)}
+                            </Trans>
+                          </RowFixed>
+                        </ResponsiveRow>
+                      </TYPE.largeHeader>
+                    ) : (
+                      <TYPE.largeHeader color={theme.text1} fontSize="36px" fontWeight={500}>
+                        <Trans>$-</Trans>
+                      </TYPE.largeHeader>
+                    )}
                   </AutoColumn>
                   <LightCard padding="12px 16px">
                     <AutoColumn gap="md">
@@ -935,7 +952,39 @@ export function PositionPage({
                     <AutoColumn gap="md">
                       <RowBetween>
                         <TYPE.main>
-                          <Trans>Collect as WETH</Trans>
+                          {ownsNFT &&
+                          (feeValue0?.greaterThan(0) || feeValue1?.greaterThan(0) || !!collectMigrationHash) ? (
+                            <ButtonConfirmed
+                              disabled={collecting || !!collectMigrationHash}
+                              confirmed={!!collectMigrationHash && !isCollectPending}
+                              width="fit-content"
+                              style={{ borderRadius: '4px' }}
+                              padding="4px 8px"
+                              onClick={() => setShowConfirm(true)}
+                            >
+                              {!!collectMigrationHash && !isCollectPending ? (
+                                <TYPE.main color={theme.text1}>
+                                  <Trans> Collected</Trans>
+                                </TYPE.main>
+                              ) : isCollectPending || collecting ? (
+                                <TYPE.main color={theme.text1}>
+                                  {' '}
+                                  <Dots>
+                                    <Trans>Collecting</Trans>
+                                  </Dots>
+                                </TYPE.main>
+                              ) : (
+                                <>
+                                  <TYPE.main color={theme.white}>
+                                    <Trans>Collect fees</Trans>
+                                  </TYPE.main>
+                                </>
+                              )}
+                            </ButtonConfirmed>
+                          ) : null}
+                        </TYPE.main>
+                        <TYPE.main>
+                          <Trans>→ Collect as WETH:</Trans>
                         </TYPE.main>
                         <Toggle
                           id="receive-as-weth"
