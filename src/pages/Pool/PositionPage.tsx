@@ -147,31 +147,85 @@ function CurrentPriceCard({
   pool,
   currencyQuote,
   currencyBase,
+  r,
+  strike,
+  owner,
+  chainId,
 }: {
   inverted?: boolean
   pool?: Pool | null
   currencyQuote?: Currency
   currencyBase?: Currency
+  r?: number
+  strike?: number
+  owner?: null
+  chainId?: number
 }) {
-  if (!pool || !currencyQuote || !currencyBase) {
+  if (!pool || !currencyQuote || !currencyBase || !r || !owner || !chainId || !strike) {
     return null
   }
 
   return (
     <LightCard padding="12px ">
-      <AutoColumn gap="8px" justify="center">
-        <ExtentsText>
-          <Trans>Current price</Trans>
-        </ExtentsText>
-        <TYPE.mediumHeader textAlign="center">
-          {(inverted ? pool.token1Price : pool.token0Price).toSignificant(6)}{' '}
-        </TYPE.mediumHeader>
-        <ExtentsText>
-          <Trans>
-            {currencyQuote?.symbol} per {currencyBase?.symbol}
-          </Trans>
-        </ExtentsText>
-      </AutoColumn>
+      <ResponsiveRow>
+        <RowFixed>
+          <AutoColumn gap="8px" justify="start">
+            <ExtentsText>
+              <TYPE.mediumHeader textAlign="center">Owner/Pool links</TYPE.mediumHeader>
+            </ExtentsText>
+            <ExtentsText>
+              <ExternalLink href={getExplorerLink(chainId, owner, ExplorerDataType.ADDRESS)}>
+                <Trans>Owner</Trans>
+              </ExternalLink>
+            </ExtentsText>
+            <ExtentsText>
+              <ExternalLink href={getExplorerLink(chainId, pool.token1.address, ExplorerDataType.ADDRESS)}>
+                <Trans>Pool address</Trans>
+              </ExternalLink>
+            </ExtentsText>
+            <ExtentsText>
+              <ExternalLink href={'http://info.yewbow.org/#/pools/0x3019d4e366576a88d28b623afaf3ecb9ec9d9580'}>
+                <Trans>Pool info</Trans>
+              </ExternalLink>
+            </ExtentsText>
+          </AutoColumn>
+        </RowFixed>
+        <RowFixed>
+          <AutoColumn gap="8px" justify="center">
+            <ExtentsText>
+              <Trans>Current price</Trans>
+            </ExtentsText>
+            <TYPE.mediumHeader textAlign="center">
+              {(inverted ? pool.token1Price : pool.token0Price).toSignificant(6)}{' '}
+            </TYPE.mediumHeader>
+            <ExtentsText>
+              <Trans>
+                {currencyQuote?.symbol} per {currencyBase?.symbol}
+              </Trans>
+            </ExtentsText>
+          </AutoColumn>
+        </RowFixed>
+        <RowFixed>
+          <AutoColumn gap="8px" justify="end">
+            <ExtentsText>
+              <TYPE.mediumHeader textAlign="center">Position stats</TYPE.mediumHeader>
+            </ExtentsText>
+            <ExtentsText>
+              <TYPE.small textAlign="center">
+                Strike: {strike.toFixed(5)} / {(1 / strike).toFixed(5)}
+              </TYPE.small>
+            </ExtentsText>
+            <ExtentsText>
+              <TYPE.small textAlign="center">Range factor: {r.toFixed(5)}</TYPE.small>
+            </ExtentsText>
+            <ExtentsText>
+              <TYPE.small textAlign="center">
+                Capital Efficiency: {((1774400 * Math.log(1.0001) * 0.5) / Math.log(r)).toFixed(0)}X
+              </TYPE.small>
+            </ExtentsText>
+          </AutoColumn>
+        </RowFixed>
+      </ResponsiveRow>
     </LightCard>
   )
 }
@@ -1047,13 +1101,7 @@ export function PositionPage({
                   </AutoColumn>
                 </LightCard>
                 <AutoColumn gap="18px" justify="center">
-                  <ExtentsText>
-                    <TYPE.small textAlign="center">{r.toFixed(5)}</TYPE.small>
-                  </ExtentsText>
                   <DoubleArrow>⟷</DoubleArrow>
-                  <ExtentsText>
-                    <TYPE.small textAlign="center">{strike.toFixed(5)}</TYPE.small>
-                  </ExtentsText>
                 </AutoColumn>
                 <LightCard padding="12px" width="100%">
                   <AutoColumn gap="8px" justify="center">
@@ -1083,6 +1131,10 @@ export function PositionPage({
                 pool={pool}
                 currencyQuote={currencyQuote}
                 currencyBase={currencyBase}
+                r={r}
+                strike={strike}
+                owner={owner}
+                chainId={chainId}
               />
             </AutoColumn>
           </DarkCard>
