@@ -212,15 +212,22 @@ function CurrentPriceCard({
             </ExtentsText>
             <ExtentsText>
               <TYPE.small textAlign="center">
-                Strike: {strike.toFixed(5)} / {(1 / strike).toFixed(5)}
+                <b>Strike:</b> {strike.toFixed(5)} / {(1 / strike).toFixed(5)}
               </TYPE.small>
             </ExtentsText>
             <ExtentsText>
-              <TYPE.small textAlign="center">Range factor: {r.toFixed(5)}</TYPE.small>
+              <TYPE.small textAlign="center">
+                <b>Range factor:</b> {r.toFixed(5)}
+              </TYPE.small>
             </ExtentsText>
             <ExtentsText>
               <TYPE.small textAlign="center">
-                Capital Efficiency: {((1774400 * Math.log(1.0001) * 0.5) / Math.log(r)).toFixed(0)}X
+                <b>Capital Efficiency:</b> {(r ** 0.5 / (r ** 0.5 - 1)).toFixed(0)}X vs V2
+              </TYPE.small>
+            </ExtentsText>
+            <ExtentsText>
+              <TYPE.small textAlign="center">
+                {((1774400 * Math.log(1.0001) * 0.5) / Math.log(r)).toFixed(0)}X vs (0,∞)
               </TYPE.small>
             </ExtentsText>
           </AutoColumn>
