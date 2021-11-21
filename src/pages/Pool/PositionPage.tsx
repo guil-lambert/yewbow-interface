@@ -39,6 +39,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  ZAxis,
 } from 'recharts'
 import { Bound } from 'state/mint/v3/actions'
 import { useSingleCallResult } from 'state/multicall/hooks'
@@ -332,6 +333,10 @@ export function PositionPage({
     tickLower,
     tickUpper,
     tokenId,
+    tokensOwed0,
+    tokensOwed1,
+    depositedToken0,
+    depositedToken1,
   } = positionDetails || {}
 
   const removed = liquidity?.eq(0)
@@ -343,6 +348,9 @@ export function PositionPage({
 
   const currency0 = token0 ? unwrappedToken(token0) : undefined
   const currency1 = token1 ? unwrappedToken(token1) : undefined
+
+  // flag for starting value
+  const [midpointStart, setMidpointStart] = useState(false)
 
   // flag for receiving WETH
   const [receiveWETH, setReceiveWETH] = useState(false)
@@ -580,6 +588,18 @@ export function PositionPage({
         ? parseFloat(position?.amount1.toSignificant(4)) + parseFloat(position?.amount0.toSignificant(4)) * Pc
         : parseFloat(position?.amount0.toSignificant(4)) + parseFloat(position?.amount1.toSignificant(4)) * Pc
       : 0
+  const feeValueETH =
+    feeValue0 && feeValue1 && chainId
+      ? token1Address == WETH9_EXTENDED[chainId]?.address
+        ? parseFloat(feeValue1.toFixed(6))
+        : parseFloat(feeValue0.toFixed(6))
+      : 0
+  const feeValueToken =
+    feeValue0 && feeValue1 && chainId
+      ? token1Address == WETH9_EXTENDED[chainId]?.address
+        ? parseFloat(feeValue0.toFixed(6))
+        : parseFloat(feeValue1.toFixed(6))
+      : 0
   const feeValueTotal =
     feeValue0 && feeValue1 && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
@@ -589,8 +609,8 @@ export function PositionPage({
   const strike = (Pb * Pa) ** 0.5
   const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
   const dp = Pb > Pa ? Pb - Pa : Pa - Pb
-  const startPrice = Pa
-
+  const startPrice = midpointStart ? strike : Pa
+  const dtot = position && depositedToken0 && liquidity ? liquidity : 0
   const dL = position
     ? Pc > Pa && Pc < Pb
       ? amtETH / (Pc ** 0.5 - Pa ** 0.5)
@@ -599,17 +619,18 @@ export function PositionPage({
       : amtETH / (Pb ** 0.5 - Pa ** 0.5)
     : 0
   const dE = (dL * (Pb ** 0.5 - Pa ** 0.5)) / (Pb * Pa) ** 0.5
-  const Pe = startPrice - feeValueTotal / dE
-  const Pmin =
-    Pc < Pe
-      ? Pc * 0.95
-      : Pe < Pa - dp
-      ? Pe * 0.95
-      : Pc < Pa - dp
-      ? Pc * 0.95
-      : Pc > Pb + dp
-      ? Pa * 0.95 - (Pc - Pb)
-      : Pa * 0.95 - dp
+  const Pe = midpointStart ? strike : startPrice - feeValueTotal / dE
+  const Pmin = midpointStart
+    ? Pa * 0.95 - dp
+    : Pc < Pe
+    ? Pc * 0.95
+    : Pe < Pa - dp
+    ? Pe * 0.95
+    : Pc < Pa - dp
+    ? Pc * 0.95
+    : Pc > Pb + dp
+    ? Pa * 0.95 - (Pc - Pb)
+    : Pa * 0.95 - dp
   const Pmax = Pc > Pb + dp ? Pc * 1.05 : Pc < Pa - dp ? Pb * 1.05 + (Pa - Pc) : Pb * 1.05 + dp
   const baseValue = dE * startPrice
   const topFees = dE * strike + feeValueTotal - baseValue
@@ -625,68 +646,207 @@ export function PositionPage({
   )
   const data = [
     {
-      x: Pmin,
-      y: dE * Pmin + feeValueTotal - baseValue,
+      x: Pmin.toFixed(9),
+      y: dE * Pmin + feeValueETH + feeValueToken * Pmin - baseValue,
     },
     {
-      x: Pa,
-      y: dE * Pa + feeValueTotal - baseValue,
-    },
-    {
-      x: Pa + (1 * dp) / 5,
+      x: (Pmin + (1 * (Pa - Pmin)) / 10).toFixed(9),
       y:
-        (dE * (2 * (strike * (Pa + (1 * dp) / 5) * r) ** 0.5 - strike - Pa - (1 * dp) / 5)) / (r - 1) +
-        feeValueTotal -
+        dE * (Pmin + (1 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (1 * (Pa - Pmin)) / 5) - baseValue,
+    },
+    {
+      x: (Pmin + (2 * (Pa - Pmin)) / 10).toFixed(9),
+      y:
+        dE * (Pmin + (2 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (2 * (Pa - Pmin)) / 5) - baseValue,
+    },
+    {
+      x: (Pmin + (3 * (Pa - Pmin)) / 10).toFixed(9),
+      y:
+        dE * (Pmin + (3 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (3 * (Pa - Pmin)) / 5) - baseValue,
+    },
+    {
+      x: (Pmin + (4 * (Pa - Pmin)) / 10).toFixed(9),
+      y:
+        dE * (Pmin + (4 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) - baseValue,
+    },
+    {
+      x: (Pmin + (5 * (Pa - Pmin)) / 10).toFixed(9),
+      y:
+        dE * (Pmin + (5 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) - baseValue,
+    },
+    {
+      x: (Pmin + (6 * (Pa - Pmin)) / 10).toFixed(9),
+      y:
+        dE * (Pmin + (6 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) - baseValue,
+    },
+    {
+      x: (Pmin + (7 * (Pa - Pmin)) / 10).toFixed(9),
+      y:
+        dE * (Pmin + (7 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) - baseValue,
+    },
+    {
+      x: (Pmin + (8 * (Pa - Pmin)) / 10).toFixed(9),
+      y:
+        dE * (Pmin + (8 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) - baseValue,
+    },
+    {
+      x: (Pmin + (9 * (Pa - Pmin)) / 10).toFixed(9),
+      y:
+        dE * (Pmin + (9 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) - baseValue,
+    },
+    {
+      x: Pe.toFixed(9),
+      y: 0,
+    },
+    {
+      x: Pa.toFixed(9),
+      y: dE * Pa + feeValueETH + feeValueToken * Pa - baseValue,
+    },
+    {
+      x: (Pa + (1 * dp) / 10).toFixed(9),
+      y:
+        (dE * (2 * (strike * (Pa + (1 * dp) / 10) * r) ** 0.5 - strike - Pa - (1 * dp) / 10)) / (r - 1) +
+        feeValueETH +
+        feeValueToken * (Pa + (1 * dp) / 10) -
         baseValue,
     },
     {
-      x: Pa + (2 * dp) / 5,
+      x: (Pa + (2 * dp) / 10).toFixed(9),
       y:
-        (dE * (2 * (strike * (Pa + (2 * dp) / 5) * r) ** 0.5 - strike - Pa - (2 * dp) / 5)) / (r - 1) +
-        feeValueTotal -
+        (dE * (2 * (strike * (Pa + (2 * dp) / 10) * r) ** 0.5 - strike - Pa - (2 * dp) / 10)) / (r - 1) +
+        feeValueETH +
+        feeValueToken * (Pa + (2 * dp) / 10) -
         baseValue,
     },
     {
-      x: Pa + (3 * dp) / 5,
+      x: (Pa + (3 * dp) / 10).toFixed(9),
       y:
-        (dE * (2 * (strike * (Pa + (3 * dp) / 5) * r) ** 0.5 - strike - Pa - (3 * dp) / 5)) / (r - 1) +
-        feeValueTotal -
+        (dE * (2 * (strike * (Pa + (3 * dp) / 10) * r) ** 0.5 - strike - Pa - (3 * dp) / 10)) / (r - 1) +
+        feeValueETH +
+        feeValueToken * (Pa + (3 * dp) / 10) -
         baseValue,
     },
     {
-      x: Pa + (4 * dp) / 5,
+      x: (Pa + (4 * dp) / 10).toFixed(9),
       y:
-        (dE * (2 * (strike * (Pa + (4 * dp) / 5) * r) ** 0.5 - strike - Pa - (4 * dp) / 5)) / (r - 1) +
-        feeValueTotal -
+        (dE * (2 * (strike * (Pa + (4 * dp) / 10) * r) ** 0.5 - strike - Pa - (4 * dp) / 10)) / (r - 1) +
+        feeValueETH +
+        feeValueToken * (Pa + (4 * dp) / 10) -
         baseValue,
     },
     {
-      x: Pa + (5 * dp) / 5,
+      x: (Pa + (5 * dp) / 10).toFixed(9),
       y:
-        (dE * (2 * (strike * (Pa + (5 * dp) / 5) * r) ** 0.5 - strike - Pa - (5 * dp) / 5)) / (r - 1) +
-        feeValueTotal -
+        (dE * (2 * (strike * (Pa + (5 * dp) / 10) * r) ** 0.5 - strike - Pa - (5 * dp) / 10)) / (r - 1) +
+        feeValueETH +
+        feeValueToken * (Pa + (5 * dp) / 10) -
         baseValue,
     },
     {
-      x: Pmax,
-      y: dE * strike + feeValueTotal - baseValue,
+      x: (Pa + (6 * dp) / 10).toFixed(9),
+      y:
+        (dE * (2 * (strike * (Pa + (6 * dp) / 10) * r) ** 0.5 - strike - Pa - (6 * dp) / 10)) / (r - 1) +
+        feeValueETH +
+        feeValueToken * (Pa + (6 * dp) / 10) -
+        baseValue,
+    },
+    {
+      x: (Pa + (7 * dp) / 10).toFixed(9),
+      y:
+        (dE * (2 * (strike * (Pa + (7 * dp) / 10) * r) ** 0.5 - strike - Pa - (7 * dp) / 10)) / (r - 1) +
+        feeValueETH +
+        feeValueToken * (Pa + (7 * dp) / 10) -
+        baseValue,
+    },
+    {
+      x: (Pa + (8 * dp) / 10).toFixed(9),
+      y:
+        (dE * (2 * (strike * (Pa + (8 * dp) / 10) * r) ** 0.5 - strike - Pa - (8 * dp) / 10)) / (r - 1) +
+        feeValueETH +
+        feeValueToken * (Pa + (8 * dp) / 10) -
+        baseValue,
+    },
+    {
+      x: (Pa + (9 * dp) / 10).toFixed(9),
+      y:
+        (dE * (2 * (strike * (Pa + (9 * dp) / 10) * r) ** 0.5 - strike - Pa - (9 * dp) / 10)) / (r - 1) +
+        feeValueETH +
+        feeValueToken * (Pa + (9 * dp) / 10) -
+        baseValue,
+    },
+    {
+      x: (Pa + (10 * dp) / 10).toFixed(9),
+      y:
+        (dE * (2 * (strike * (Pa + (10 * dp) / 10) * r) ** 0.5 - strike - Pa - (10 * dp) / 10)) / (r - 1) +
+        feeValueETH +
+        feeValueToken * (Pa + (10 * dp) / 10) -
+        baseValue,
+    },
+    {
+      x: (Pb + (1 * (Pmax - Pb)) / 10).toFixed(9),
+      y: dE * strike + feeValueETH + feeValueToken * (Pb + (1 * (Pmax - Pb)) / 10) - baseValue,
+    },
+    {
+      x: (Pb + (2 * (Pmax - Pb)) / 10).toFixed(9),
+      y: dE * strike + feeValueETH + feeValueToken * (Pb + (2 * (Pmax - Pb)) / 10) - baseValue,
+    },
+    {
+      x: (Pb + (3 * (Pmax - Pb)) / 10).toFixed(9),
+      y: dE * strike + feeValueETH + feeValueToken * (Pb + (3 * (Pmax - Pb)) / 10) - baseValue,
+    },
+    {
+      x: (Pb + (4 * (Pmax - Pb)) / 10).toFixed(9),
+      y: dE * strike + feeValueETH + feeValueToken * (Pb + (4 * (Pmax - Pb)) / 10) - baseValue,
+    },
+    {
+      x: (Pb + (5 * (Pmax - Pb)) / 10).toFixed(9),
+      y: dE * strike + feeValueETH + feeValueToken * (Pb + (5 * (Pmax - Pb)) / 10) - baseValue,
+    },
+    {
+      x: (Pb + (6 * (Pmax - Pb)) / 10).toFixed(9),
+      y: dE * strike + feeValueETH + feeValueToken * (Pb + (6 * (Pmax - Pb)) / 10) - baseValue,
+    },
+    {
+      x: (Pb + (7 * (Pmax - Pb)) / 10).toFixed(9),
+      y: dE * strike + feeValueETH + feeValueToken * (Pb + (7 * (Pmax - Pb)) / 10) - baseValue,
+    },
+    {
+      x: (Pb + (8 * (Pmax - Pb)) / 10).toFixed(9),
+      y: dE * strike + feeValueETH + feeValueToken * (Pb + (8 * (Pmax - Pb)) / 10) - baseValue,
+    },
+    {
+      x: (Pb + (9 * (Pmax - Pb)) / 10).toFixed(9),
+      y: dE * strike + feeValueETH + feeValueToken * (Pb + (9 * (Pmax - Pb)) / 10) - baseValue,
+    },
+    {
+      x: Pmax.toFixed(9),
+      y: dE * strike + feeValueETH + feeValueToken * Pmax - baseValue,
     },
   ]
   const dataPc = [
     {
       name: 'Current Price',
-      x: Pc.toFixed(8),
+      x: Pc.toFixed(5),
       y:
         Pc < Pb && Pc > Pa
-          ? ((dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) + feeValueTotal - baseValue).toFixed(6)
+          ? (
+              (dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) +
+              feeValueETH +
+              feeValueToken * Pc -
+              baseValue
+            ).toFixed(6)
           : Pc < Pa
-          ? (dE * Pc + feeValueTotal - baseValue).toFixed(6)
-          : (dE * strike + feeValueTotal - baseValue).toFixed(6),
+          ? (dE * Pc + feeValueETH + feeValueToken * Pc - baseValue).toFixed(6)
+          : (dE * strike + feeValueETH + feeValueToken * Pc - baseValue).toFixed(6),
+      z: 20,
     },
+  ]
+  const dataPe = [
     {
       name: 'Break even',
-      x: Pe.toFixed(8),
+      x: Pe.toFixed(5),
       y: 0,
+      z: 20,
     },
   ]
   const gradientOffset = () => {
@@ -741,7 +901,7 @@ export function PositionPage({
           <AutoColumn gap="sm">
             <Link style={{ textDecoration: 'none', width: 'fit-content', marginBottom: '0.5rem' }} to="/pool">
               <HoverText>
-                <Trans>← Back to Pools Overview</Trans>
+                <Trans>← Back to Pools Overview: {dtot}</Trans>
               </HoverText>
             </Link>
             <ResponsiveRow>
@@ -810,9 +970,10 @@ export function PositionPage({
                         (dE * strike + feeValueTotal - baseValue).toFixed(3),
                       ]}
                       dataKey="y"
-                      domain={[dE * Pmin - baseValue, dE * strike * 1.1 + feeValueTotal - baseValue]}
+                      domain={[dE * Pmin - baseValue, dE * strike * 1.25 + feeValueTotal - baseValue]}
                       label={{ value: 'Profit/Loss', angle: -90, position: 'insideLeft', offset: 5 }}
                     />
+                    <ZAxis type="number" dataKey="z" range={[1, 100]} />
                     <defs>
                       <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
                         <stop offset={off} stopColor="green" stopOpacity={1} />
@@ -823,7 +984,7 @@ export function PositionPage({
                       x1={Pmin}
                       x2={Pa}
                       y1={dE * strike + feeValueTotal - baseValue}
-                      y2={dE * strike * 1.1 + feeValueTotal - baseValue}
+                      y2={dE * strike * 1.25 + feeValueTotal - baseValue}
                       fillOpacity={0}
                       label={'100% token'}
                     />
@@ -831,7 +992,7 @@ export function PositionPage({
                       x1={Pb}
                       x2={Pmax}
                       y1={dE * strike + feeValueTotal - baseValue}
-                      y2={dE * strike * 1.1 + feeValueTotal - baseValue}
+                      y2={dE * strike * 1.25 + feeValueTotal - baseValue}
                       fillOpacity={0}
                       label={'100% ETH'}
                     />
@@ -839,16 +1000,36 @@ export function PositionPage({
                       x1={Pa}
                       x2={Pb}
                       y1={dE * Pmin - baseValue}
-                      y2={dE * strike * 1.1 + feeValueTotal - baseValue}
+                      y2={dE * strike * 1.25 + feeValueTotal - baseValue}
                       fillOpacity={0.5}
                     />
-                    <Area type="monotone" dataKey="y" name="PL" stroke="#000" fill="url(#splitColor)" />
-                    <ReferenceLine y={dE * strike + feeValueTotal - baseValue} stroke="#000" strokeDasharray="1 4" />
+                    <Area type="basis" dataKey="y" stroke="#000" fill="url(#splitColor)" activeDot={false} />
+                    <ReferenceLine
+                      y={dE * strike + feeValueETH + feeValueToken * Pb - baseValue}
+                      stroke="#000"
+                      strokeDasharray="1 4"
+                    />
                     <ReferenceLine y={0} stroke="#000" />
-                    <Scatter data={dataPc} dataKey="name" />
-                    <Tooltip />
+                    <Scatter data={dataPc} />
+                    <Scatter line={{ stroke: '#000', strokeWidth: 1.5 }} data={data} dataKey="x" />
+                    <Tooltip
+                      labelFormatter={() => ' '}
+                      allowEscapeViewBox={{
+                        x: true,
+                        y: true,
+                      }}
+                      position={{ x: 188, y: 225 }}
+                      coordinate={{ x: -100, y: 10 }}
+                      cursor={{ stroke: 'red', strokeWidth: 1 }}
+                    />
                   </ComposedChart>
                 </div>
+                Break me?{' '}
+                <Toggle
+                  id="mid-or-base"
+                  isActive={midpointStart}
+                  toggle={() => setMidpointStart((midpointStart) => !midpointStart)}
+                />
               </DarkCard>
             ) : (
               <DarkCard
