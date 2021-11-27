@@ -17,5 +17,5 @@ export function formatTickPrice(
     return placeholder
   }
 
-  return formatPrice(price, 5)
+  return formatPrice(price, 7)
 }

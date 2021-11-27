@@ -14,4 +14,6 @@ export interface PositionDetails {
   feeGrowthInside1LastX128: BigNumber
   tokensOwed0: BigNumber
   tokensOwed1: BigNumber
+  depositedToken0: BigNumber
+  depositedToken1: BigNumber
 }

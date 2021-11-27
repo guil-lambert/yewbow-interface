@@ -1,5 +1,6 @@
 import { Trans } from '@lingui/macro'
 import { ButtonGray, ButtonOutlined, ButtonPrimary } from 'components/Button'
+import { DarkCard, LightCard } from 'components/Card'
 import { AutoColumn } from 'components/Column'
 import DowntimeWarning from 'components/DowntimeWarning'
 import { FlyoutAlignment, NewMenu } from 'components/Menu'
@@ -24,11 +25,11 @@ import CTACards from './CTACards'
 import { LoadingRows } from './styleds'
 
 const PageWrapper = styled(AutoColumn)`
-  max-width: 870px;
+  max-width: 1920px;
   width: 100%;
 
   ${({ theme }) => theme.mediaWidth.upToMedium`
-    max-width: 800px;
+    max-width: 1920px;
   `};
 
   ${({ theme }) => theme.mediaWidth.upToSmall`
@@ -227,7 +228,7 @@ export default function Pool() {
               <NetworkAlert thin />
               <DowntimeWarning />
             </HideSmall>
-
+            <DarkCard>Net. Liq.: xx. Portfolio delta: xx. Total fees: xx. P/L: xx. P/L YTD: xx. ePoP: xx.</DarkCard>
             <MainContentWrapper>
               {positionsLoading ? (
                 <LoadingRows>

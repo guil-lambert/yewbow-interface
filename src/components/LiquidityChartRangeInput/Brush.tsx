@@ -123,7 +123,7 @@ export const Brush = ({
         [Math.max(0 + BRUSH_EXTENT_MARGIN_PX, xScale(0)), 0],
         [innerWidth - BRUSH_EXTENT_MARGIN_PX, innerHeight],
       ])
-      .handleSize(30)
+      .handleSize(50)
       .filter(() => interactive)
       .on('brush end', brushed)
 

@@ -47,6 +47,10 @@ export default function RangeSelector({
     leftPrice && rightPrice
       ? (parseFloat(rightPrice.toSignificant(5)) / parseFloat(leftPrice.toSignificant(5))) ** 0.5
       : 1
+  const Teff =
+    leftPrice && rightPrice ? ((2 * 3.1415926) / 0.05 ** 2) * ((range ** 0.5 - 1) / (range ** 0.5 + 1)) ** 2 : 1
+  const v2Ratio = leftPrice && rightPrice ? 1 / (1 - range ** -0.5) : 1
+  const nTicks = range && feeAmount ? ((Math.log(range) * 1000050) / feeAmount).toFixed(0) : 1
   return (
     <AutoColumn gap="md">
       <RowBetween>
@@ -60,7 +64,7 @@ export default function RangeSelector({
           incrementDisabled={ticksAtLimit[isSorted ? Bound.LOWER : Bound.UPPER]}
           feeAmount={feeAmount}
           label={leftPrice ? `${currencyB?.symbol}` : '-'}
-          title={range.toFixed(4)}
+          title={range ? `${range.toFixed(4)}, ${Teff.toFixed(2)}, ${nTicks}` : '-'}
           tokenA={currencyA?.symbol}
           tokenB={currencyB?.symbol}
         />
@@ -76,7 +80,7 @@ export default function RangeSelector({
           label={rightPrice ? `${currencyB?.symbol}` : '-'}
           tokenA={currencyA?.symbol}
           tokenB={currencyB?.symbol}
-          title={strike ? `${strike?.toFixed(2)}` : '-'}
+          title={strike ? `${strike?.toFixed(2)}, ${v2Ratio.toFixed(2)}` : '-'}
         />
       </RowBetween>
     </AutoColumn>

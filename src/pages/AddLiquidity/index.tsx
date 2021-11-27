@@ -721,7 +721,6 @@ export default function AddLiquidity({
                   </AutoColumn>
                 </DynamicSection>
               </div>
-
               {!hasExistingPosition ? (
                 <>
                   <HideMedium>

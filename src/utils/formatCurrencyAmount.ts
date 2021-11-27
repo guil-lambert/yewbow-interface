@@ -23,8 +23,8 @@ export function formatPrice(price: Price<Currency, Currency> | undefined, sigFig
     return '-'
   }
 
-  if (parseFloat(price.toFixed(sigFigs)) < 0.0001) {
-    return '<0.0001'
+  if (parseFloat(price.toFixed(sigFigs)) < 0.000001) {
+    return '<0.000001'
   }
 
   return price.toSignificant(sigFigs)

@@ -21,20 +21,20 @@ import { ZoomLevels } from './types'
 
 const ZOOM_LEVELS: Record<FeeAmount, ZoomLevels> = {
   [FeeAmount.LOW]: {
-    initialMin: 0.999,
-    initialMax: 1.001,
+    initialMin: 0.625,
+    initialMax: 1.6,
     min: 0.00001,
     max: 1.5,
   },
   [FeeAmount.MEDIUM]: {
-    initialMin: 0.5,
-    initialMax: 2,
+    initialMin: 0.625,
+    initialMax: 1.6,
     min: 0.00001,
     max: 20,
   },
   [FeeAmount.HIGH]: {
-    initialMin: 0.5,
-    initialMax: 2,
+    initialMin: 0.625,
+    initialMax: 1.6,
     min: 0.00001,
     max: 20,
   },
@@ -183,7 +183,7 @@ export default function LiquidityChartRangeInput({
           <Chart
             data={{ series: formattedData, current: price }}
             dimensions={{ width: 400, height: 200 }}
-            margins={{ top: 10, right: 2, bottom: 20, left: 0 }}
+            margins={{ top: 20, right: 2, bottom: 20, left: 0 }}
             styles={{
               area: {
                 selection: theme.blue1,

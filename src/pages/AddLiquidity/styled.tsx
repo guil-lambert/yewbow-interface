@@ -5,13 +5,13 @@ import { BodyWrapper } from 'pages/AppBody'
 import styled from 'styled-components/macro'
 
 export const PageWrapper = styled(BodyWrapper)<{ wide: boolean }>`
-  max-width: ${({ wide }) => (wide ? '880px' : '480px')};
+  max-width: ${({ wide }) => (wide ? '1920px' : '480px')};
   width: 100%;
 
   padding: ${({ wide }) => (wide ? '10px' : '0')};
 
   ${({ theme }) => theme.mediaWidth.upToMedium`
-    max-width: 480px;
+    max-width: 1920px;
   `};
 `
 
@@ -34,7 +34,7 @@ export const ScrollablePage = styled.div`
   display: flex;
   flex-direction: column;
   ${({ theme }) => theme.mediaWidth.upToMedium`
-    max-width: 480px;
+    max-width: 880px;
     margin: 0 auto;
   `};
 `
@@ -60,7 +60,7 @@ export const ResponsiveTwoColumns = styled.div<{ wide: boolean }>`
   display: grid;
   grid-column-gap: 50px;
   grid-row-gap: 15px;
-  grid-template-columns: ${({ wide }) => (wide ? '1fr 1fr' : '1fr')};
+  grid-template-columns: ${({ wide }) => (wide ? '1 fr 1fr' : '1fr')};
   grid-template-rows: max-content;
   grid-auto-flow: row;
 

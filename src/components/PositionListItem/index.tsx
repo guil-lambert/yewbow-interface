@@ -4,12 +4,15 @@ import { Position } from '@uniswap/v3-sdk'
 import Badge from 'components/Badge'
 import RangeBadge from 'components/Badge/RangeBadge'
 import DoubleCurrencyLogo from 'components/DoubleLogo'
+import FormattedCurrencyAmount from 'components/FormattedCurrencyAmount'
 import HoverInlineText from 'components/HoverInlineText'
 import Loader from 'components/Loader'
 import { RowBetween } from 'components/Row'
 import { useToken } from 'hooks/Tokens'
 import useIsTickAtLimit from 'hooks/useIsTickAtLimit'
 import { usePool } from 'hooks/usePools'
+import { useV3PositionFees } from 'hooks/useV3PositionFees'
+import { useV3Positions } from 'hooks/useV3Positions'
 import numbro from 'numbro'
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
@@ -25,8 +28,8 @@ import { DAI, USDC, USDT, WBTC, WETH9_EXTENDED } from '../../constants/tokens'
 export const formatAmount = (num: number | undefined, digits = 2) => {
   if (num === 0) return '0'
   if (!num) return '-'
-  if (num < 0.001) {
-    return '<0.001'
+  if (num < 0.000001) {
+    return '<0.000001'
   }
   return numbro(num).format({
     mantissa: num > 10000 ? 0 : num > 1000 ? 1 : num < 100 ? 3 : num < 10 ? 4 : digits,
@@ -256,7 +259,9 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
   const positionSummaryLink = '/pool/' + positionDetails.tokenId
 
   const removed = liquidity?.eq(0)
-
+  const [feeValue0, feeValue1] = useV3PositionFees(pool ?? undefined, positionDetails?.tokenId, false)
+  const fees0 = feeValue0 ? <FormattedCurrencyAmount currencyAmount={feeValue0} /> : 0
+  const fees1 = feeValue1 ? <FormattedCurrencyAmount currencyAmount={feeValue1} significantDigits={2} /> : 0
   return (
     <LinkRow to={positionSummaryLink}>
       <RowBetween>
@@ -291,6 +296,20 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
           <Trans>
             {formatAmount(formattedPrice)} {''}
             <HoverInlineText text={currencyQuote?.symbol} /> per{' '}
+            <HoverInlineText maxCharacters={10} text={currencyBase?.symbol} />
+          </Trans>
+        </RangeText>
+        <RangeText>
+          <ExtentsText>
+            <Trans>Uncollected Fees:</Trans>
+          </ExtentsText>
+          <Trans>
+            {position?.amount0.toSignificant(2)}
+            {'+'}
+            {fees0 ? fees0 : 0}
+            <HoverInlineText maxCharacters={10} text={currencyQuote?.symbol} />,{position?.amount1.toSignificant(2)}
+            {'+'}
+            {fees1 ? fees1 : 0}
             <HoverInlineText maxCharacters={10} text={currencyBase?.symbol} />
           </Trans>
         </RangeText>
