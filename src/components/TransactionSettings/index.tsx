@@ -239,13 +239,13 @@ export default function TransactionSettings({ placeholderSlippage }: Transaction
           <RowFixed>
             <OptionCustom style={{ width: '80px' }} warning={!!deadlineError} tabIndex={-1}>
               <Input
-                placeholder={(DEFAULT_DEADLINE_FROM_NOW / 60).toString()}
+                placeholder={DEFAULT_DEADLINE_FROM_NOW.toString()}
                 value={
                   deadlineInput.length > 0
                     ? deadlineInput
                     : deadline === DEFAULT_DEADLINE_FROM_NOW
                     ? ''
-                    : (deadline / 60).toString()
+                    : deadline.toString()
                 }
                 onChange={(e) => parseCustomDeadline(e.target.value)}
                 onBlur={() => {

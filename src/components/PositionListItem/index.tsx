@@ -65,7 +65,7 @@ const LinkRow = styled(Link)`
     text-align: center;
   }
   :hover {
-    background-color: ${({ theme }) => theme.bg2};
+    background-color: ${({ theme }) => theme.bg3};
   }
 
   @media screen and (min-width: ${MEDIA_WIDTHS.upToSmall}px) {
@@ -231,6 +231,8 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
     return undefined
   }, [liquidity, pool, tickLower, tickUpper])
 
+  const [feeValue0, feeValue1] = useV3PositionFees(pool ?? undefined, positionDetails?.tokenId, false)
+
   const tickAtLimit = useIsTickAtLimit(feeAmount, tickLower, tickUpper)
 
   // prices
@@ -261,15 +263,18 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
     ? formatAmount(formattedPrice) > lowPrice && formatAmount(formattedPrice) <= highPrice
     : undefined
 
+  const removed = liquidity?.eq(0)
+  const inverted = token1 ? base?.equals(token1) : undefined
+  const fg =
+    feeValue0 && feeValue1
+      ? feeValue1.toSignificant(2) < feeValue0.toSignificant(2)
+        ? feeValue1.multiply(2)
+        : feeValue0.multiply(2)
+      : undefined
+
   //const outOfRange: boolean = pool ? pool.tickCurrent > tickLower || pool.tickCurrent <= tickUpper : false
   const positionSummaryLink = '/pool/' + positionDetails.tokenId
 
-  const removed = liquidity?.eq(0)
-  const [feeValue0, feeValue1] = useV3PositionFees(pool ?? undefined, positionDetails?.tokenId, false)
-  const inverted = token1 ? base?.equals(token1) : undefined
-  const fees0 = feeValue0 ? parseFloat(feeValue0.toSignificant(3)) : 0
-  const fees1 = feeValue1 ? parseFloat(feeValue1.toSignificant(3)) : 0
-  const feesETH = fees0 && fees1 ? (Math.max(fees0, fees1) / formattedPrice + Math.min(fees0, fees1)).toPrecision(3) : 0
   return (
     <LinkRow to={positionSummaryLink}>
       <RowBetween>
@@ -309,11 +314,10 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
         </RangeText>
         <RangeText>
           <ExtentsText>
-            <Trans>Uncollected Fees:</Trans>
+            <Trans>Uncollected fees:</Trans>
           </ExtentsText>
           <Trans>
-            {feesETH} {''}
-            <HoverInlineText text={feeBase} />
+            {fg?.toSignificant(3)} {''}ETH
           </Trans>
         </RangeText>
         <RangeBadge removed={removed} inRange={insideRange} belowRange={below} aboveRange={above} />
