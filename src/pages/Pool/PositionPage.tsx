@@ -588,7 +588,8 @@ export function PositionPage({
     : 0
   const dE = (dL * (Pb ** 0.5 - Pa ** 0.5)) / (Pb * Pa) ** 0.5
   const BE = (feeValueTotal * (1 - r)) / dE + strike * (-2 * r ** 0.5 + 2 * r)
-  const Pe = midpointStart ? strike - BE : startPrice - feeValueTotal / dE
+  const Pe2 = midpointStart ? strike - BE : startPrice - feeValueTotal / dE
+  const Pe = midpointStart ? strike - BE : (startPrice - feeValueETH / dE) / (1 + feeValueToken / dE)
   const Pmin = midpointStart
     ? Pa * 0.95 - dp
     : Pc < Pe
@@ -615,195 +616,241 @@ export function PositionPage({
   )
   const data = [
     {
-      x: Pmin.toPrecision(3),
-      y: dE * Pmin + feeValueETH + feeValueToken * Pmin - baseValue,
+      x: Pmin.toPrecision(5),
+      y: (dE * Pmin + feeValueETH + feeValueToken * Pmin - baseValue).toPrecision(5),
     },
     {
-      x: (Pmin + (1 * (Pa - Pmin)) / 10).toPrecision(3),
-      y:
-        dE * (Pmin + (1 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (1 * (Pa - Pmin)) / 5) - baseValue,
+      x: (Pmin + (1 * (Pa - Pmin)) / 10).toPrecision(5),
+      y: (
+        dE * (Pmin + (1 * (Pa - Pmin)) / 10) +
+        feeValueETH +
+        feeValueToken * (Pmin + (1 * (Pa - Pmin)) / 5) -
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pmin + (2 * (Pa - Pmin)) / 10).toPrecision(3),
-      y:
-        dE * (Pmin + (2 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (2 * (Pa - Pmin)) / 5) - baseValue,
+      x: (Pmin + (2 * (Pa - Pmin)) / 10).toPrecision(5),
+      y: (
+        dE * (Pmin + (2 * (Pa - Pmin)) / 10) +
+        feeValueETH +
+        feeValueToken * (Pmin + (2 * (Pa - Pmin)) / 5) -
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pmin + (3 * (Pa - Pmin)) / 10).toPrecision(3),
-      y:
-        dE * (Pmin + (3 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (3 * (Pa - Pmin)) / 5) - baseValue,
+      x: (Pmin + (3 * (Pa - Pmin)) / 10).toPrecision(5),
+      y: (
+        dE * (Pmin + (3 * (Pa - Pmin)) / 10) +
+        feeValueETH +
+        feeValueToken * (Pmin + (3 * (Pa - Pmin)) / 5) -
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pmin + (4 * (Pa - Pmin)) / 10).toPrecision(3),
-      y:
-        dE * (Pmin + (4 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) - baseValue,
+      x: (Pmin + (4 * (Pa - Pmin)) / 10).toPrecision(5),
+      y: (
+        dE * (Pmin + (4 * (Pa - Pmin)) / 10) +
+        feeValueETH +
+        feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) -
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pmin + (5 * (Pa - Pmin)) / 10).toPrecision(3),
-      y:
-        dE * (Pmin + (5 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) - baseValue,
+      x: (Pmin + (5 * (Pa - Pmin)) / 10).toPrecision(5),
+      y: (
+        dE * (Pmin + (5 * (Pa - Pmin)) / 10) +
+        feeValueETH +
+        feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) -
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pmin + (6 * (Pa - Pmin)) / 10).toPrecision(3),
-      y:
-        dE * (Pmin + (6 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) - baseValue,
+      x: (Pmin + (6 * (Pa - Pmin)) / 10).toPrecision(5),
+      y: (
+        dE * (Pmin + (6 * (Pa - Pmin)) / 10) +
+        feeValueETH +
+        feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) -
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pmin + (7 * (Pa - Pmin)) / 10).toPrecision(3),
-      y:
-        dE * (Pmin + (7 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) - baseValue,
+      x: (Pmin + (7 * (Pa - Pmin)) / 10).toPrecision(5),
+      y: (
+        dE * (Pmin + (7 * (Pa - Pmin)) / 10) +
+        feeValueETH +
+        feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) -
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pmin + (8 * (Pa - Pmin)) / 10).toPrecision(3),
-      y:
-        dE * (Pmin + (8 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) - baseValue,
+      x: (Pmin + (8 * (Pa - Pmin)) / 10).toPrecision(5),
+      y: (
+        dE * (Pmin + (8 * (Pa - Pmin)) / 10) +
+        feeValueETH +
+        feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) -
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pmin + (9 * (Pa - Pmin)) / 10).toPrecision(3),
-      y:
-        dE * (Pmin + (9 * (Pa - Pmin)) / 10) + feeValueETH + feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) - baseValue,
+      x: (Pmin + (9 * (Pa - Pmin)) / 10).toPrecision(5),
+      y: (
+        dE * (Pmin + (9 * (Pa - Pmin)) / 10) +
+        feeValueETH +
+        feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) -
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: Pa.toPrecision(3),
-      y: dE * Pa + feeValueETH + feeValueToken * Pa - baseValue,
+      x: Pa.toPrecision(5),
+      y: (dE * Pa + feeValueETH + feeValueToken * Pa - baseValue).toPrecision(5),
     },
     {
-      x: (Pa + (1 * dp) / 10).toPrecision(3),
-      y:
+      x: (Pa + (1 * dp) / 10).toPrecision(5),
+      y: (
         (dE * (2 * (strike * (Pa + (1 * dp) / 10) * r) ** 0.5 - strike - Pa - (1 * dp) / 10)) / (r - 1) +
         feeValueETH +
         feeValueToken * (Pa + (1 * dp) / 10) -
-        baseValue,
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pa + (2 * dp) / 10).toPrecision(3),
-      y:
+      x: (Pa + (2 * dp) / 10).toPrecision(5),
+      y: (
         (dE * (2 * (strike * (Pa + (2 * dp) / 10) * r) ** 0.5 - strike - Pa - (2 * dp) / 10)) / (r - 1) +
         feeValueETH +
         feeValueToken * (Pa + (2 * dp) / 10) -
-        baseValue,
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pa + (3 * dp) / 10).toPrecision(3),
-      y:
+      x: (Pa + (3 * dp) / 10).toPrecision(5),
+      y: (
         (dE * (2 * (strike * (Pa + (3 * dp) / 10) * r) ** 0.5 - strike - Pa - (3 * dp) / 10)) / (r - 1) +
         feeValueETH +
         feeValueToken * (Pa + (3 * dp) / 10) -
-        baseValue,
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pa + (4 * dp) / 10).toPrecision(3),
-      y:
+      x: (Pa + (4 * dp) / 10).toPrecision(5),
+      y: (
         (dE * (2 * (strike * (Pa + (4 * dp) / 10) * r) ** 0.5 - strike - Pa - (4 * dp) / 10)) / (r - 1) +
         feeValueETH +
         feeValueToken * (Pa + (4 * dp) / 10) -
-        baseValue,
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pa + (5 * dp) / 10).toPrecision(3),
-      y:
+      x: (Pa + (5 * dp) / 10).toPrecision(5),
+      y: (
         (dE * (2 * (strike * (Pa + (5 * dp) / 10) * r) ** 0.5 - strike - Pa - (5 * dp) / 10)) / (r - 1) +
         feeValueETH +
         feeValueToken * (Pa + (5 * dp) / 10) -
-        baseValue,
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pa + (6 * dp) / 10).toPrecision(3),
-      y:
+      x: (Pa + (6 * dp) / 10).toPrecision(5),
+      y: (
         (dE * (2 * (strike * (Pa + (6 * dp) / 10) * r) ** 0.5 - strike - Pa - (6 * dp) / 10)) / (r - 1) +
         feeValueETH +
         feeValueToken * (Pa + (6 * dp) / 10) -
-        baseValue,
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pa + (7 * dp) / 10).toPrecision(3),
-      y:
+      x: (Pa + (7 * dp) / 10).toPrecision(5),
+      y: (
         (dE * (2 * (strike * (Pa + (7 * dp) / 10) * r) ** 0.5 - strike - Pa - (7 * dp) / 10)) / (r - 1) +
         feeValueETH +
         feeValueToken * (Pa + (7 * dp) / 10) -
-        baseValue,
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pa + (8 * dp) / 10).toPrecision(3),
-      y:
+      x: (Pa + (8 * dp) / 10).toPrecision(5),
+      y: (
         (dE * (2 * (strike * (Pa + (8 * dp) / 10) * r) ** 0.5 - strike - Pa - (8 * dp) / 10)) / (r - 1) +
         feeValueETH +
         feeValueToken * (Pa + (8 * dp) / 10) -
-        baseValue,
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pa + (9 * dp) / 10).toPrecision(3),
-      y:
+      x: (Pa + (9 * dp) / 10).toPrecision(5),
+      y: (
         (dE * (2 * (strike * (Pa + (9 * dp) / 10) * r) ** 0.5 - strike - Pa - (9 * dp) / 10)) / (r - 1) +
         feeValueETH +
         feeValueToken * (Pa + (9 * dp) / 10) -
-        baseValue,
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pa + (10 * dp) / 10).toPrecision(3),
-      y:
+      x: (Pa + (10 * dp) / 10).toPrecision(5),
+      y: (
         (dE * (2 * (strike * (Pa + (10 * dp) / 10) * r) ** 0.5 - strike - Pa - (10 * dp) / 10)) / (r - 1) +
         feeValueETH +
         feeValueToken * (Pa + (10 * dp) / 10) -
-        baseValue,
+        baseValue
+      ).toPrecision(5),
     },
     {
-      x: (Pb + (1 * (Pmax - Pb)) / 10).toPrecision(3),
-      y: dE * strike + feeValueETH + feeValueToken * (Pb + (1 * (Pmax - Pb)) / 10) - baseValue,
+      x: (Pb + (1 * (Pmax - Pb)) / 10).toPrecision(5),
+      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (1 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
     },
     {
-      x: (Pb + (2 * (Pmax - Pb)) / 10).toPrecision(3),
-      y: dE * strike + feeValueETH + feeValueToken * (Pb + (2 * (Pmax - Pb)) / 10) - baseValue,
+      x: (Pb + (2 * (Pmax - Pb)) / 10).toPrecision(5),
+      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (2 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
     },
     {
-      x: (Pb + (3 * (Pmax - Pb)) / 10).toPrecision(3),
-      y: dE * strike + feeValueETH + feeValueToken * (Pb + (3 * (Pmax - Pb)) / 10) - baseValue,
+      x: (Pb + (3 * (Pmax - Pb)) / 10).toPrecision(5),
+      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (3 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
     },
     {
-      x: (Pb + (4 * (Pmax - Pb)) / 10).toPrecision(3),
-      y: dE * strike + feeValueETH + feeValueToken * (Pb + (4 * (Pmax - Pb)) / 10) - baseValue,
+      x: (Pb + (4 * (Pmax - Pb)) / 10).toPrecision(5),
+      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (4 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
     },
     {
-      x: (Pb + (5 * (Pmax - Pb)) / 10).toPrecision(3),
-      y: dE * strike + feeValueETH + feeValueToken * (Pb + (5 * (Pmax - Pb)) / 10) - baseValue,
+      x: (Pb + (5 * (Pmax - Pb)) / 10).toPrecision(5),
+      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (5 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
     },
     {
-      x: (Pb + (6 * (Pmax - Pb)) / 10).toPrecision(3),
-      y: dE * strike + feeValueETH + feeValueToken * (Pb + (6 * (Pmax - Pb)) / 10) - baseValue,
+      x: (Pb + (6 * (Pmax - Pb)) / 10).toPrecision(5),
+      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (6 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
     },
     {
-      x: (Pb + (7 * (Pmax - Pb)) / 10).toPrecision(3),
-      y: dE * strike + feeValueETH + feeValueToken * (Pb + (7 * (Pmax - Pb)) / 10) - baseValue,
+      x: (Pb + (7 * (Pmax - Pb)) / 10).toPrecision(5),
+      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (7 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
     },
     {
-      x: (Pb + (8 * (Pmax - Pb)) / 10).toPrecision(3),
-      y: dE * strike + feeValueETH + feeValueToken * (Pb + (8 * (Pmax - Pb)) / 10) - baseValue,
+      x: (Pb + (8 * (Pmax - Pb)) / 10).toPrecision(5),
+      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (8 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
     },
     {
-      x: (Pb + (9 * (Pmax - Pb)) / 10).toPrecision(3),
-      y: dE * strike + feeValueETH + feeValueToken * (Pb + (9 * (Pmax - Pb)) / 10) - baseValue,
+      x: (Pb + (9 * (Pmax - Pb)) / 10).toPrecision(5),
+      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (9 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
     },
     {
-      x: Pmax.toPrecision(3),
-      y: dE * strike + feeValueETH + feeValueToken * Pmax - baseValue,
+      x: Pmax.toPrecision(5),
+      y: (dE * strike + feeValueETH + feeValueToken * Pmax - baseValue).toPrecision(5),
     },
   ]
   const dataH = [
     {
-      x: Pmin.toPrecision(3),
-      y: dE * Pmin + feeValueETH + feeValueToken * Pmin - baseValue + (dE * (strike - Pmin)) / 2,
+      x: Pmin.toPrecision(5),
+      y: (dE * Pmin + feeValueETH + feeValueToken * Pmin - baseValue + (dE * (strike - Pmin)) / 2).toPrecision(5),
     },
     {
-      x: Pa.toPrecision(3),
-      y: dE * Pa + feeValueETH + feeValueToken * Pa - baseValue + (dE * (strike - Pa)) / 2,
+      x: Pa.toPrecision(5),
+      y: (dE * Pa + feeValueETH + feeValueToken * Pa - baseValue + (dE * (strike - Pa)) / 2).toPrecision(5),
     },
     {
-      x: Pb.toPrecision(3),
-      y: dE * Pb + feeValueETH + feeValueToken * Pb - baseValue + (dE * (strike - Pb)) / 2,
+      x: Pb.toPrecision(5),
+      y: (dE * Pb + feeValueETH + feeValueToken * Pb - baseValue + (dE * (strike - Pb)) / 2).toPrecision(5),
     },
     {
-      x: Pmax.toPrecision(3),
-      y: dE * strike + feeValueETH + feeValueToken * Pmax - baseValue + (dE * (strike - Pmax)) / 2,
+      x: Pmax.toPrecision(5),
+      y: (dE * strike + feeValueETH + feeValueToken * Pmax - baseValue + (dE * (strike - Pmax)) / 2).toPrecision(5),
     },
   ]
   const dataPc = [
@@ -817,24 +864,24 @@ export function PositionPage({
               feeValueETH +
               feeValueToken * Pc -
               baseValue
-            ).toFixed(6)
+            ).toPrecision(3)
           : Pc < Pa
-          ? (dE * Pc + feeValueETH + feeValueToken * Pc - baseValue).toFixed(6)
-          : (dE * strike + feeValueETH + feeValueToken * Pc - baseValue).toFixed(6),
+          ? (dE * Pc + feeValueETH + feeValueToken * Pc - baseValue).toPrecision(3)
+          : (dE * strike + feeValueETH + feeValueToken * Pc - baseValue).toPrecision(3),
       z: 20,
     },
   ]
   const dataPe = [
     {
       name: 'Break even',
-      x: Pe.toPrecision(3),
+      x: Pe.toPrecision(5),
       y: 0,
       z: 20,
     },
   ]
   const gradientOffset = () => {
-    const dataMax = Math.max(...data.map((i) => i.y))
-    const dataMin = Math.min(...data.map((i) => i.y))
+    const dataMax = Math.max(...data.map((i) => parseFloat(i.y)))
+    const dataMin = Math.min(...data.map((i) => parseFloat(i.y)))
 
     if (dataMax <= 0) {
       return 0
@@ -972,15 +1019,12 @@ export function PositionPage({
                     />
                     <YAxis
                       tick={{ fontSize: 10 }}
+                      allowDecimals={false}
                       interval={0}
                       ticks={[
                         0,
-                        (
-                          (dE * (2 * (strike * Math.min(Pc, Pb) * r) ** 0.5 - strike - Math.min(Pc, Pb))) / (r - 1) +
-                          feeValueTotal -
-                          baseValue
-                        ).toPrecision(3),
-                        (dE * strike + feeValueTotal - baseValue).toPrecision(3),
+                        dataPc[0].y,
+                        (dE * strike + feeValueETH + feeValueToken * Pb - baseValue).toPrecision(3),
                       ]}
                       dataKey="y"
                       domain={[dE * Pmin - baseValue, dE * strike * 1.25 + feeValueTotal - baseValue]}
@@ -1032,7 +1076,7 @@ export function PositionPage({
                         x: true,
                         y: true,
                       }}
-                      position={{ x: 188, y: 225 }}
+                      position={{ x: 238, y: 225 }}
                       coordinate={{ x: -100, y: 10 }}
                       cursor={{ stroke: 'red', strokeWidth: 1 }}
                     />
