@@ -10718,6 +10718,11 @@ extglob@^2.0.4:
     snapdragon "^0.8.1"
     to-regex "^3.0.1"
 
+extra-math@^1.1.18:
+  version "1.1.18"
+  resolved "https://registry.yarnpkg.com/extra-math/-/extra-math-1.1.18.tgz#4d6cc9c0319dc50b345c5b59d48c9c4698e59df2"
+  integrity sha512-8L+FVrVLZZaEnDuIG9d+hya7OjqLIqWsJ/IH9DS5CODtkJNX1vZa5AUdB5brzK1crzjS05k2mEN8LnL/b2I1eQ==
+
 extract-files@11.0.0:
   version "11.0.0"
   resolved "https://registry.yarnpkg.com/extract-files/-/extract-files-11.0.0.tgz#b72d428712f787eef1f5193aff8ab5351ca8469a"

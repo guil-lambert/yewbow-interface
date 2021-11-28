@@ -15,6 +15,7 @@ import { Dots } from 'components/swap/styleds'
 import Toggle from 'components/Toggle'
 import TransactionConfirmationModal, { ConfirmationModalContent } from 'components/TransactionConfirmationModal'
 import { SupportedChainId } from 'constants/chains'
+import { erf } from 'extra-math'
 import { useToken } from 'hooks/Tokens'
 import { useV3NFTPositionManagerContract } from 'hooks/useContract'
 import useIsTickAtLimit from 'hooks/useIsTickAtLimit'
@@ -879,6 +880,14 @@ export function PositionPage({
       z: 20,
     },
   ]
+  const dataPerf = [
+    {
+      x: Pe.toPrecision(5),
+      y: (1 / (6.28 * 0.05 * Pe * 7 ** 0.5)) * Math.exp((Math.log(Pe) - Math.log(Pc)) ** 2),
+      z: 20,
+    },
+  ]
+  const vol = pool ? pool.liquidity : 0
   const gradientOffset = () => {
     const dataMax = Math.max(...data.map((i) => parseFloat(i.y)))
     const dataMin = Math.min(...data.map((i) => parseFloat(i.y)))

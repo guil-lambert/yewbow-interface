@@ -72,7 +72,7 @@ function colors(darkMode: boolean): Colors {
     bg3: darkMode ? '#40444F' : 'hsl(5, 10%, 92%)',
     bg4: darkMode ? '#565A69' : 'hsl(5, 7%, 87%)',
     bg5: darkMode ? '#6C7284' : 'hsl(5, 3%, 77%)',
-    bg6: darkMode ? '#6C7284' : 'hsl(5, 2%, 60%)',
+    bg6: darkMode ? '#6C7284' : 'hsl(215, 100%, 98%)',
 
     //specialty colors
     modalBG: darkMode ? 'rgba(0,0,0,.425)' : 'rgba(0,0,0,0.3)',

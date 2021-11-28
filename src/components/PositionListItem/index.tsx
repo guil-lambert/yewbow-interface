@@ -65,7 +65,7 @@ const LinkRow = styled(Link)`
     text-align: center;
   }
   :hover {
-    background-color: ${({ theme }) => theme.bg3};
+    background-color: ${({ theme }) => theme.bg6};
   }
 
   @media screen and (min-width: ${MEDIA_WIDTHS.upToSmall}px) {
@@ -274,6 +274,12 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
 
   //const outOfRange: boolean = pool ? pool.tickCurrent > tickLower || pool.tickCurrent <= tickUpper : false
   const positionSummaryLink = '/pool/' + positionDetails.tokenId
+  const Pa = lowPrice < highPrice ? parseFloat(lowPrice) : parseFloat(highPrice)
+  const Pb = lowPrice < highPrice ? parseFloat(highPrice) : parseFloat(lowPrice)
+  const Pc = formattedPrice
+  const strike = (Pb * Pa) ** 0.5
+  const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
+  const delta = Pc < Pb && Pc > Pa ? 1 - (((strike * r) / Pc) ** 0.5 - 1) / (r - 1) : Pc < Pa ? 0 : 1
 
   return (
     <LinkRow to={positionSummaryLink}>
@@ -320,7 +326,18 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
             {fg?.toSignificant(3)} {''}ETH
           </Trans>
         </RangeText>
-        <RangeBadge removed={removed} inRange={insideRange} belowRange={below} aboveRange={above} />
+        <RangeText>
+          <ExtentsText>
+            <Trans>Delta:</Trans>
+          </ExtentsText>
+          <Trans>{(delta * 100).toFixed(0)}</Trans>
+        </RangeText>
+        <RangeBadge
+          removed={removed}
+          inRange={delta > 0 && delta < 1}
+          belowRange={delta == 1}
+          aboveRange={delta == 0}
+        />
       </RowBetween>
       {priceLower && priceUpper ? (
         <RowBetween>
