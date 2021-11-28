@@ -146,7 +146,8 @@ export default function Pool() {
     [[], []]
   ) ?? [[], []]
 
-  const filteredPositions = [...openPositions, ...(userHideClosedPositions ? [] : closedPositions)]
+  //const filteredPositions = [...openPositions, ...(userHideClosedPositions ? [] : closedPositions)]
+  const filteredPositions = [...openPositions, ...(userHideClosedPositions ? [] : openPositions)]
   const showConnectAWallet = Boolean(!account)
   const showV2Features = !!chainId && !L2_CHAIN_IDS.includes(chainId)
 

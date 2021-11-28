@@ -20,6 +20,7 @@ import { Bound } from 'state/mint/v3/actions'
 import styled from 'styled-components/macro'
 import { HideSmall, MEDIA_WIDTHS, SmallOnly } from 'theme'
 import { PositionDetails } from 'types/position'
+import { formatCurrencyAmount } from 'utils/formatCurrencyAmount'
 import { formatTickPrice } from 'utils/formatTickPrice'
 import { unwrappedToken } from 'utils/unwrappedToken'
 
@@ -245,7 +246,12 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
 
   const currentPrice = pool ? 1.0001 ** pool.tickCurrent * 10 ** (pool.token0.decimals - pool.token1.decimals) : 1
   const formattedPrice = currentPrice ? Math.max(currentPrice, 1 / currentPrice) : 1
-
+  const feeBase =
+    currentPrice > 1
+      ? formattedPrice == currentPrice
+        ? currencyBase?.symbol
+        : currencyQuote?.symbol
+      : currencyBase?.symbol
   const lowPrice = formatTickPrice(priceLower, tickAtLimit, Bound.UPPER)
   const highPrice = formatTickPrice(priceUpper, tickAtLimit, Bound.UPPER)
 
@@ -260,8 +266,10 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
 
   const removed = liquidity?.eq(0)
   const [feeValue0, feeValue1] = useV3PositionFees(pool ?? undefined, positionDetails?.tokenId, false)
-  const fees0 = feeValue0 ? <FormattedCurrencyAmount currencyAmount={feeValue0} /> : 0
-  const fees1 = feeValue1 ? <FormattedCurrencyAmount currencyAmount={feeValue1} significantDigits={2} /> : 0
+  const inverted = token1 ? base?.equals(token1) : undefined
+  const fees0 = feeValue0 ? parseFloat(feeValue0.toSignificant(3)) : 0
+  const fees1 = feeValue1 ? parseFloat(feeValue1.toSignificant(3)) : 0
+  const feesETH = fees0 && fees1 ? (Math.max(fees0, fees1) / formattedPrice + Math.min(fees0, fees1)).toPrecision(3) : 0
   return (
     <LinkRow to={positionSummaryLink}>
       <RowBetween>
@@ -304,13 +312,8 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
             <Trans>Uncollected Fees:</Trans>
           </ExtentsText>
           <Trans>
-            {position?.amount0.toSignificant(2)}
-            {'+'}
-            {fees0 ? fees0 : 0}
-            <HoverInlineText maxCharacters={10} text={currencyQuote?.symbol} />,{position?.amount1.toSignificant(2)}
-            {'+'}
-            {fees1 ? fees1 : 0}
-            <HoverInlineText maxCharacters={10} text={currencyBase?.symbol} />
+            {feesETH} {''}
+            <HoverInlineText text={feeBase} />
           </Trans>
         </RangeText>
         <RangeBadge removed={removed} inRange={insideRange} belowRange={below} aboveRange={above} />

@@ -321,7 +321,6 @@ export function PositionPage({
 }: RouteComponentProps<{ tokenId?: string }>) {
   const { chainId, account, library } = useActiveWeb3React()
   const theme = useTheme()
-
   const parsedTokenId = tokenIdFromUrl ? BigNumber.from(tokenIdFromUrl) : undefined
   const { loading, position: positionDetails } = useV3PositionFromTokenId(parsedTokenId)
 
@@ -501,37 +500,6 @@ export function PositionPage({
       : undefined
   const inRange: boolean = typeof below === 'boolean' && typeof above === 'boolean' ? !below && !above : false
 
-  function modalHeader() {
-    return (
-      <AutoColumn gap={'md'} style={{ marginTop: '20px' }}>
-        <LightCard padding="12px 16px">
-          <AutoColumn gap="md">
-            <RowBetween>
-              <RowFixed>
-                <CurrencyLogo currency={feeValueUpper?.currency} size={'20px'} style={{ marginRight: '0.5rem' }} />
-                <TYPE.main>{feeValueUpper ? formatCurrencyAmount(feeValueUpper, 4) : '-'}</TYPE.main>
-              </RowFixed>
-              <TYPE.main>{feeValueUpper?.currency?.symbol}</TYPE.main>
-            </RowBetween>
-            <RowBetween>
-              <RowFixed>
-                <CurrencyLogo currency={feeValueLower?.currency} size={'20px'} style={{ marginRight: '0.5rem' }} />
-                <TYPE.main>{feeValueLower ? formatCurrencyAmount(feeValueLower, 4) : '-'}</TYPE.main>
-              </RowFixed>
-              <TYPE.main>{feeValueLower?.currency?.symbol}</TYPE.main>
-            </RowBetween>
-          </AutoColumn>
-        </LightCard>
-        <TYPE.italic>
-          <Trans>Collecting fees will withdraw currently available fees for you.</Trans>
-        </TYPE.italic>
-        <ButtonPrimary onClick={collect}>
-          <Trans>Collect</Trans>
-        </ButtonPrimary>
-      </AutoColumn>
-    )
-  }
-
   const fees = fiatValueOfFees ? parseFloat(fiatValueOfFees.toFixed(4)) : 0
   const liqFiatValue = fiatValueOfLiquidity ? parseFloat(fiatValueOfLiquidity.toFixed(4)) : 0
   const currencyETH =
@@ -587,7 +555,7 @@ export function PositionPage({
       ? token1Address == WETH9_EXTENDED[chainId]?.address
         ? parseFloat(position?.amount1.toSignificant(4)) + parseFloat(position?.amount0.toSignificant(4)) * Pc
         : parseFloat(position?.amount0.toSignificant(4)) + parseFloat(position?.amount1.toSignificant(4)) * Pc
-      : 0
+      : 999
   const feeValueETH =
     feeValue0 && feeValue1 && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
@@ -605,7 +573,7 @@ export function PositionPage({
       ? token1Address == WETH9_EXTENDED[chainId]?.address
         ? parseFloat(feeValue1.toFixed(6)) + parseFloat(feeValue0.toFixed(6)) * Pc
         : parseFloat(feeValue0.toFixed(6)) + parseFloat(feeValue1.toFixed(6)) * Pc
-      : 0
+      : 888
   const strike = (Pb * Pa) ** 0.5
   const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
   const dp = Pb > Pa ? Pb - Pa : Pa - Pb
@@ -880,6 +848,36 @@ export function PositionPage({
 
   const off = gradientOffset()
 
+  function modalHeader() {
+    return (
+      <AutoColumn gap={'md'} style={{ marginTop: '20px' }}>
+        <LightCard padding="12px 16px">
+          <AutoColumn gap="md">
+            <RowBetween>
+              <RowFixed>
+                <CurrencyLogo currency={feeValueUpper?.currency} size={'20px'} style={{ marginRight: '0.5rem' }} />
+                <TYPE.main>{feeValueUpper ? formatCurrencyAmount(feeValueUpper, 4) : '-'}</TYPE.main>
+              </RowFixed>
+              <TYPE.main>{feeValueUpper?.currency?.symbol}</TYPE.main>
+            </RowBetween>
+            <RowBetween>
+              <RowFixed>
+                <CurrencyLogo currency={feeValueLower?.currency} size={'20px'} style={{ marginRight: '0.5rem' }} />
+                <TYPE.main>{feeValueLower ? formatCurrencyAmount(feeValueLower, 4) : '-'}</TYPE.main>
+              </RowFixed>
+              <TYPE.main>{feeValueLower?.currency?.symbol}</TYPE.main>
+            </RowBetween>
+          </AutoColumn>
+        </LightCard>
+        <TYPE.italic>
+          <Trans>Collecting fees will withdraw currently available fees for you.</Trans>
+        </TYPE.italic>
+        <ButtonPrimary onClick={collect}>
+          <Trans>Collect</Trans>
+        </ButtonPrimary>
+      </AutoColumn>
+    )
+  }
   return loading || poolState === PoolState.LOADING || !feeAmount ? (
     <LoadingRows>
       <div />
@@ -1081,7 +1079,7 @@ export function PositionPage({
                           <RowFixed>
                             <Trans>
                               <CurrencyLogo currency={currencyETH} size={'20px'} style={{ marginRight: '0.5rem' }} />
-                              {LiqValueTotal.toPrecision(3)}
+                              {LiqValueTotal?.toFixed(2)}
                             </Trans>
                           </RowFixed>
                         </ResponsiveRow>
