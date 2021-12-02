@@ -18,7 +18,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Bound } from 'state/mint/v3/actions'
 import styled from 'styled-components/macro'
-import { HideSmall, MEDIA_WIDTHS, SmallOnly } from 'theme'
+import { HideSmall, MEDIA_WIDTHS, SmallOnly, TYPE } from 'theme'
 import { PositionDetails } from 'types/position'
 import { formatCurrencyAmount } from 'utils/formatCurrencyAmount'
 import { formatTickPrice } from 'utils/formatTickPrice'
@@ -296,28 +296,41 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
           </Badge>
           &nbsp;
           <RangeText>
-            <Trans>{formatTickPrice(priceLower, tickAtLimit, Bound.LOWER)}</Trans>
+            <Trans>
+              {Pc < Pa ? (
+                <TYPE.green>{formatAmount(formattedPrice)}</TYPE.green>
+              ) : (
+                formatTickPrice(priceLower, tickAtLimit, Bound.LOWER)
+              )}
+            </Trans>
           </RangeText>{' '}
           <HideSmall>
-            <DoubleArrow>⟷</DoubleArrow>{' '}
+            <DoubleArrow>{Pc < Pa ? '.....' : '⟷'}</DoubleArrow>{' '}
           </HideSmall>
-          <SmallOnly>
-            <DoubleArrow>⟷</DoubleArrow>{' '}
-          </SmallOnly>
           <RangeText>
-            <Trans>{formatTickPrice(priceUpper, tickAtLimit, Bound.UPPER)}</Trans>
+            <Trans>
+              {Pc > Pa && Pc < Pb ? (
+                <TYPE.blue>{formatAmount(formattedPrice)}</TYPE.blue>
+              ) : Pc > Pb ? (
+                formatTickPrice(priceUpper, tickAtLimit, Bound.UPPER)
+              ) : (
+                formatTickPrice(priceLower, tickAtLimit, Bound.LOWER)
+              )}
+            </Trans>
+          </RangeText>
+          <HideSmall>
+            <DoubleArrow>{Pc > Pb ? '.....' : '⟷'}</DoubleArrow>{' '}
+          </HideSmall>
+          <RangeText>
+            <Trans>
+              {Pc > Pb ? (
+                <TYPE.red>{formatAmount(formattedPrice)}</TYPE.red>
+              ) : (
+                formatTickPrice(priceUpper, tickAtLimit, Bound.UPPER)
+              )}
+            </Trans>
           </RangeText>
         </PrimaryPositionIdData>
-        <RangeText>
-          <ExtentsText>
-            <Trans>Current Price:</Trans>
-          </ExtentsText>
-          <Trans>
-            {formatAmount(formattedPrice)} {''}
-            <HoverInlineText text={currencyQuote?.symbol} /> per{' '}
-            <HoverInlineText maxCharacters={10} text={currencyBase?.symbol} />
-          </Trans>
-        </RangeText>
         <RangeText>
           <ExtentsText>
             <Trans>Uncollected fees:</Trans>
