@@ -276,11 +276,32 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
   const positionSummaryLink = '/pool/' + positionDetails.tokenId
   const Pa = lowPrice < highPrice ? parseFloat(lowPrice) : parseFloat(highPrice)
   const Pb = lowPrice < highPrice ? parseFloat(highPrice) : parseFloat(lowPrice)
+  const Plower = Math.min(Math.max(Pa, 1 / Pa), Math.max(Pb, 1 / Pb))
+  const Pupper = Math.max(Math.max(Pa, 1 / Pa), Math.max(Pb, 1 / Pb))
   const Pc = formattedPrice
   const strike = (Pb * Pa) ** 0.5
   const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
-  const delta = Pc < Pb && Pc > Pa ? 1 - (((strike * r) / Pc) ** 0.5 - 1) / (r - 1) : Pc < Pa ? 0 : 1
-
+  const delta = Pc < Pupper && Pc > Plower ? 1 - (((strike * r) / Pc) ** 0.5 - 1) / (r - 1) : Pc < Plower ? 0 : 1
+  const decs0 = pool ? pool.token0.decimals : 0
+  const decs1 = pool ? pool.token1.decimals : 0
+  const yMax = liquidity
+    ? Pc > Pb
+      ? Math.abs(parseFloat(liquidity.toString()) * (Pb ** 0.5 - Pa ** 0.5)) / 10 ** (decs0 / 2 + decs1 / 2)
+      : Pc > Pa
+      ? Math.abs(parseFloat(liquidity.toString()) * (Pc ** 0.5 - Pa ** 0.5)) / 10 ** (decs0 / 2 + decs1 / 2)
+      : 0
+    : 0
+  const xMax = liquidity
+    ? Pc < Pa
+      ? Math.abs(parseFloat(liquidity.toString()) * (Pa ** -0.5 - Pb ** -0.5)) / 10 ** (decs0 / 2 + decs1 / 2)
+      : Pc < Pb
+      ? Math.abs(parseFloat(liquidity.toString()) * (Pc ** -0.5 - Pb ** -0.5)) / 10 ** (decs0 / 2 + decs1 / 2)
+      : 0
+    : 0
+  const positionValue = yMax / Pc + xMax > 0 ? yMax / Pc + xMax : 0
+  const startValue = liquidity
+    ? Math.abs(Pa * parseFloat(liquidity.toString()) * (Pb ** 0.5 - Pa ** 0.5)) / 10 ** (decs0 / 2 + decs1 / 2)
+    : 0
   return (
     <LinkRow to={positionSummaryLink}>
       <RowBetween>
@@ -297,37 +318,34 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
           &nbsp;
           <RangeText>
             <Trans>
-              {Pc < Pa ? (
-                <TYPE.green>{formatAmount(formattedPrice)}</TYPE.green>
-              ) : (
-                formatTickPrice(priceLower, tickAtLimit, Bound.LOWER)
-              )}
+              {Pc > Pupper ? <TYPE.red>{formatAmount(1000 / formattedPrice)}</TYPE.red> : formatAmount(1000 / Pupper)}
             </Trans>
           </RangeText>{' '}
           <HideSmall>
-            <DoubleArrow>{Pc < Pa ? '.....' : '⟷'}</DoubleArrow>{' '}
+            <DoubleArrow>{Pc > Pupper ? '..........' : '⟷'}</DoubleArrow>{' '}
           </HideSmall>
           <RangeText>
             <Trans>
-              {Pc > Pa && Pc < Pb ? (
-                <TYPE.blue>{formatAmount(formattedPrice)}</TYPE.blue>
-              ) : Pc > Pb ? (
-                formatTickPrice(priceUpper, tickAtLimit, Bound.UPPER)
+              {Pc > Plower && Pc < Pupper ? (
+                <TYPE.blue>{formatAmount(1000 / formattedPrice)}</TYPE.blue>
+              ) : Pc < Plower ? (
+                formatAmount(1000 / Plower)
               ) : (
-                formatTickPrice(priceLower, tickAtLimit, Bound.LOWER)
+                formatAmount(1000 / Pupper)
               )}
             </Trans>
           </RangeText>
           <HideSmall>
-            <DoubleArrow>{Pc > Pb ? '.....' : '⟷'}</DoubleArrow>{' '}
+            <DoubleArrow>{Pc < Plower ? '..........' : '⟷'}</DoubleArrow>{' '}
           </HideSmall>
           <RangeText>
             <Trans>
-              {Pc > Pb ? (
-                <TYPE.red>{formatAmount(formattedPrice)}</TYPE.red>
+              {Pc < Plower ? (
+                <TYPE.green>{formatAmount(1000 / formattedPrice)}</TYPE.green>
               ) : (
-                formatTickPrice(priceUpper, tickAtLimit, Bound.UPPER)
-              )}
+                formatAmount(1000 / Plower)
+              )}{' '}
+              mETH
             </Trans>
           </RangeText>
         </PrimaryPositionIdData>
@@ -336,7 +354,9 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
             <Trans>Uncollected fees:</Trans>
           </ExtentsText>
           <Trans>
-            {fg?.toSignificant(3)} {''}ETH
+            {fg?.toSignificant(3)} {''}ETH{' / '}
+            {fg && yMax / Pc + xMax > 0 ? ((100 * parseFloat(fg.toSignificant(5))) / (yMax / Pc + xMax)).toFixed(1) : 0}
+            %
           </Trans>
         </RangeText>
         <RangeText>
@@ -344,6 +364,17 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
             <Trans>Delta:</Trans>
           </ExtentsText>
           <Trans>{(delta * 100).toFixed(0)}</Trans>
+        </RangeText>
+        <RangeText>
+          <ExtentsText>
+            <Trans>Returns</Trans>
+          </ExtentsText>
+          <Trans>
+            {formattedPrice < Plower
+              ? (100 * Pupper) / Plower - 100
+              : ((100 * Pupper) / formattedPrice - 100).toFixed(0)}
+            %
+          </Trans>
         </RangeText>
         <RangeBadge
           removed={removed}
