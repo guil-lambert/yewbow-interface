@@ -560,20 +560,20 @@ export function PositionPage({
   const feeValueETH =
     feeValue0 && feeValue1 && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
-        ? parseFloat(feeValue1.toFixed(6))
-        : parseFloat(feeValue0.toFixed(6))
+        ? parseFloat(feeValue1.toSignificant(6))
+        : parseFloat(feeValue0.toSignificant(6))
       : 0
   const feeValueToken =
     feeValue0 && feeValue1 && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
-        ? parseFloat(feeValue0.toFixed(6))
-        : parseFloat(feeValue1.toFixed(6))
+        ? parseFloat(feeValue0.toSignificant(6))
+        : parseFloat(feeValue1.toSignificant(6))
       : 0
   const feeValueTotal =
     feeValue0 && feeValue1 && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
-        ? parseFloat(feeValue1.toFixed(6)) + parseFloat(feeValue0.toFixed(6)) * Pc
-        : parseFloat(feeValue0.toFixed(6)) + parseFloat(feeValue1.toFixed(6)) * Pc
+        ? parseFloat(feeValue1.toSignificant(6)) + parseFloat(feeValue0.toSignificant(6)) * Pc
+        : parseFloat(feeValue0.toSignificant(6)) + parseFloat(feeValue1.toSignificant(6)) * Pc
       : 888
   const strike = (Pb * Pa) ** 0.5
   const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
@@ -589,7 +589,6 @@ export function PositionPage({
     : 0
   const dE = (dL * (Pb ** 0.5 - Pa ** 0.5)) / (Pb * Pa) ** 0.5
   const BE = (feeValueTotal * (1 - r)) / dE + strike * (-2 * r ** 0.5 + 2 * r)
-  const Pe2 = midpointStart ? strike - BE : startPrice - feeValueTotal / dE
   const Pe = midpointStart ? strike - BE : (startPrice - feeValueETH / dE) / (1 + feeValueToken / dE)
   const Pmin = midpointStart
     ? Pa * 0.95 - dp

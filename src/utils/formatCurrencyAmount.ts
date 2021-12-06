@@ -11,8 +11,8 @@ export function formatCurrencyAmount(amount: CurrencyAmount<Currency> | undefine
     return '0'
   }
 
-  if (amount.divide(amount.decimalScale).lessThan(new Fraction(1, 100000))) {
-    return '<0.00001'
+  if (amount.divide(amount.decimalScale).lessThan(new Fraction(1, 10000000))) {
+    return '<0.0000001'
   }
 
   return amount.toSignificant(sigFigs)
@@ -23,8 +23,8 @@ export function formatPrice(price: Price<Currency, Currency> | undefined, sigFig
     return '-'
   }
 
-  if (parseFloat(price.toFixed(sigFigs)) < 0.000001) {
-    return '<0.000001'
+  if (parseFloat(price.toFixed(sigFigs)) < 0.00000001) {
+    return '<0.00000001'
   }
 
   return price.toSignificant(sigFigs)

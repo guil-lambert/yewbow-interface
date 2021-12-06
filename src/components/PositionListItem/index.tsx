@@ -270,7 +270,7 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
       ? feeValue1.toSignificant(2) < feeValue0.toSignificant(2)
         ? feeValue1.multiply(2)
         : feeValue0.multiply(2)
-      : undefined
+      : 0
 
   //const outOfRange: boolean = pool ? pool.tickCurrent > tickLower || pool.tickCurrent <= tickUpper : false
   const positionSummaryLink = '/pool/' + positionDetails.tokenId
@@ -344,20 +344,22 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
                 <TYPE.green>{formatAmount(1000 / formattedPrice)}</TYPE.green>
               ) : (
                 formatAmount(1000 / Plower)
-              )}{' '}
-              mETH
-            </Trans>
+              )}
+            </Trans>{' '}
+            <Trans>mETH</Trans>
           </RangeText>
         </PrimaryPositionIdData>
         <RangeText>
           <ExtentsText>
             <Trans>Uncollected fees:</Trans>
           </ExtentsText>
+          <Trans>{fg.toFixed(3)}</Trans>
+          {''} ETH (
           <Trans>
-            {fg?.toSignificant(3)} {''}ETH{' / '}
             {fg && yMax / Pc + xMax > 0 ? ((100 * parseFloat(fg.toSignificant(5))) / (yMax / Pc + xMax)).toFixed(1) : 0}
             %
           </Trans>
+          )
         </RangeText>
         <RangeText>
           <ExtentsText>
@@ -371,7 +373,7 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
           </ExtentsText>
           <Trans>
             {formattedPrice < Plower
-              ? (100 * Pupper) / Plower - 100
+              ? ((100 * Pupper) / Plower - 100).toFixed(0)
               : ((100 * Pupper) / formattedPrice - 100).toFixed(0)}
             %
           </Trans>
