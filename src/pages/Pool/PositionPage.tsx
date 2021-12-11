@@ -587,9 +587,13 @@ export function PositionPage({
       ? amtTok / (Pa ** -0.5 - Pb ** -0.5)
       : amtETH / (Pb ** 0.5 - Pa ** 0.5)
     : 0
-  const dE = (dL * (Pb ** 0.5 - Pa ** 0.5)) / (Pb * Pa) ** 0.5
-  const BE = (feeValueTotal * (1 - r)) / dE + strike * (-2 * r ** 0.5 + 2 * r)
-  const Pe = midpointStart ? strike - BE : (startPrice - feeValueETH / dE) / (1 + feeValueToken / dE)
+  const dE = midpointStart
+    ? (dL * (Pb ** 0.5 - strike ** 0.5)) / (Pb * strike) ** 0.5
+    : (dL * (Pb ** 0.5 - Pa ** 0.5)) / (Pb * Pa) ** 0.5
+  const baseValue = midpointStart ? (dE * 2 * strike * (r ** 0.5 - 1)) / (r - 1) : dE * startPrice
+  //const BE = (feeValueTotal * (1 - r)) / dE + strike * (-2 * r ** 0.5 + 2 * r)
+  const BE = (baseValue * (1 - r) - feeValueETH * (1 - r)) / (dE + feeValueToken * (1 - r))
+  const Pe = (startPrice - feeValueETH / dE) / (1 + feeValueToken / dE)
   const Pmin = midpointStart
     ? Pa * 0.95 - dp
     : Pc < Pe
@@ -602,7 +606,6 @@ export function PositionPage({
     ? Pa * 0.95 - (Pc - Pb)
     : Pa * 0.95 - dp
   const Pmax = Pc > Pb + dp ? Pc * 1.05 : Pc < Pa - dp ? Pb * 1.05 + (Pa - Pc) : Pb * 1.05 + dp
-  const baseValue = dE * startPrice
   const topFees = dE * strike + feeValueTotal - baseValue
   const onOptimisticChain = chainId && [SupportedChainId.OPTIMISM, SupportedChainId.OPTIMISTIC_KOVAN].includes(chainId)
   const showCollectAsWeth = Boolean(
