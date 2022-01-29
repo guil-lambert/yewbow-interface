@@ -2,7 +2,7 @@ import { BigNumber } from '@ethersproject/bignumber'
 import { TransactionResponse } from '@ethersproject/providers'
 import { Trans } from '@lingui/macro'
 import { Currency, CurrencyAmount, Fraction, Percent, Price, Token } from '@uniswap/sdk-core'
-import { NonfungiblePositionManager, Pool, Position } from '@uniswap/v3-sdk'
+import { computePoolAddress, NonfungiblePositionManager, Pool, Position } from '@uniswap/v3-sdk'
 import Badge from 'components/Badge'
 import { ButtonConfirmed, ButtonGray, ButtonPrimary } from 'components/Button'
 import { DarkCard, LightCard } from 'components/Card'
@@ -56,6 +56,7 @@ import RangeBadge from '../../components/Badge/RangeBadge'
 import { getPriceOrderingFromPositionForUI } from '../../components/PositionListItem'
 import RateToggle from '../../components/RateToggle'
 import { SwitchLocaleLink } from '../../components/SwitchLocaleLink'
+import { V3_CORE_FACTORY_ADDRESSES } from '../../constants/addresses'
 import { WETH9_EXTENDED } from '../../constants/tokens'
 import { usePositionTokenURI } from '../../hooks/usePositionTokenURI'
 import useTheme from '../../hooks/useTheme'
@@ -152,6 +153,7 @@ function CurrentPriceCard({
   r,
   strike,
   owner,
+  poolAddress,
   chainId,
 }: {
   inverted?: boolean
@@ -161,9 +163,10 @@ function CurrentPriceCard({
   r?: number
   strike?: number
   owner?: null
+  poolAddress?: string
   chainId?: number
 }) {
-  if (!pool || !currencyQuote || !currencyBase || !r || !owner || !chainId || !strike) {
+  if (!pool || !currencyQuote || !currencyBase || !r || !owner || !poolAddress || !chainId || !strike) {
     return null
   }
 
@@ -173,7 +176,7 @@ function CurrentPriceCard({
         <RowFixed>
           <AutoColumn gap="8px" justify="start">
             <ExtentsText>
-              <TYPE.mediumHeader textAlign="center">Owner/Pool links</TYPE.mediumHeader>
+              <TYPE.mediumHeader textAlign="center">Pool Info/Links</TYPE.mediumHeader>
             </ExtentsText>
             <ExtentsText>
               <ExternalLink href={getExplorerLink(chainId, owner, ExplorerDataType.ADDRESS)}>
@@ -181,12 +184,12 @@ function CurrentPriceCard({
               </ExternalLink>
             </ExtentsText>
             <ExtentsText>
-              <ExternalLink href={getExplorerLink(chainId, pool.token1.address, ExplorerDataType.ADDRESS)}>
+              <ExternalLink href={getExplorerLink(chainId, poolAddress, ExplorerDataType.ADDRESS)}>
                 <Trans>Pool address</Trans>
               </ExternalLink>
             </ExtentsText>
             <ExtentsText>
-              <ExternalLink href={'http://info.yewbow.org/#/pools/0x3019d4e366576a88d28b623afaf3ecb9ec9d9580'}>
+              <ExternalLink href={'http://info.yewbow.org/#/pools/' + poolAddress}>
                 <Trans>Pool info</Trans>
               </ExternalLink>
             </ExtentsText>
@@ -225,11 +228,6 @@ function CurrentPriceCard({
             <ExtentsText>
               <TYPE.small textAlign="center">
                 <b>Capital Efficiency:</b> {(r ** 0.5 / (r ** 0.5 - 1)).toFixed(0)}X vs V2
-              </TYPE.small>
-            </ExtentsText>
-            <ExtentsText>
-              <TYPE.small textAlign="center">
-                {((1774400 * Math.log(1.0001) * 0.5) / Math.log(r)).toFixed(0)}X vs (0,∞)
               </TYPE.small>
             </ExtentsText>
           </AutoColumn>
@@ -365,6 +363,7 @@ export function PositionPage({
   }, [liquidity, pool, tickLower, tickUpper])
 
   const tickAtLimit = useIsTickAtLimit(feeAmount, tickLower, tickUpper)
+  const v3CoreFactoryAddress = chainId && V3_CORE_FACTORY_ADDRESSES[chainId]
 
   const pricesFromPosition = getPriceOrderingFromPositionForUI(position)
   const [manuallyInverted, setManuallyInverted] = useState(true)
@@ -482,6 +481,8 @@ export function PositionPage({
 
   const owner = useSingleCallResult(!!tokenId ? positionManager : null, 'ownerOf', [tokenId]).result?.[0]
   const ownsNFT = owner === account || positionDetails?.operator === account
+  const poolAddress =
+    currency0 && currency1 && feeAmount ? Pool.getAddress(currency0?.wrapped, currency1?.wrapped, feeAmount) : ' '
 
   const feeValueUpper = inverted ? feeValue0 : feeValue1
   const feeValueLower = inverted ? feeValue1 : feeValue0
@@ -1093,18 +1094,6 @@ export function PositionPage({
                     />
                   </ComposedChart>
                 </div>
-                <div>
-                  <RowFixed>
-                    <AutoColumn>MidPoint?</AutoColumn>
-                    <AutoColumn>
-                      <Toggle
-                        id="mid-or-base"
-                        isActive={midpointStart}
-                        toggle={() => setMidpointStart((midpointStart) => !midpointStart)}
-                      />
-                    </AutoColumn>
-                  </RowFixed>
-                </div>
               </DarkCard>
             ) : (
               <DarkCard
@@ -1397,6 +1386,7 @@ export function PositionPage({
                 r={r}
                 strike={strike}
                 owner={owner}
+                poolAddress={poolAddress}
                 chainId={chainId}
               />
             </AutoColumn>
