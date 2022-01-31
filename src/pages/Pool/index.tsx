@@ -229,7 +229,6 @@ export default function Pool() {
               <NetworkAlert thin />
               <DowntimeWarning />
             </HideSmall>
-            <DarkCard>Net. Liq.: xx. Portfolio delta: xx. Total fees: xx. P/L: xx. P/L YTD: xx. ePoP: xx.</DarkCard>
             <MainContentWrapper>
               {positionsLoading ? (
                 <LoadingRows>

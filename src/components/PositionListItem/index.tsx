@@ -41,16 +41,28 @@ export const formatAmount = (num: number | undefined, digits = 2) => {
   })
 }
 
+// responsive text
+export const Label = styled(TYPE.label)<{ end?: number }>`
+  display: flex;
+  font-size: 16px;
+  font-weight: 400;
+  justify-content: ${({ end }) => (end ? 'flex-end' : 'flex-start')};
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+  @media screen and (max-width: 640px) {
+    font-size: 14px;
+  }
+`
+
 const LinkRow = styled(Link)`
   align-items: center;
   border-radius: 7px;
-  display: flex;
   cursor: pointer;
   user-select: none;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-gap: 1em;
+  align-items: center;
 
-  justify-content: space-between;
   color: ${({ theme }) => theme.text1};
   margin: 8px 0;
   padding: 16px;
@@ -130,11 +142,12 @@ const ExtentsText = styled.span`
 `
 
 const PrimaryPositionIdData = styled.div`
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-gap: 3em;
   align-items: center;
+  grid-template-columns: 0.5fr 1fr 0.5fr 300px 2.5fr 2fr 2fr 3.5fr 2fr;
   > * {
-    margin-right: 8px;
+    margin-right: 0px;
   }
 `
 
@@ -276,11 +289,17 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
   const positionSummaryLink = '/pool/' + positionDetails.tokenId
   const Pa = lowPrice < highPrice ? parseFloat(lowPrice) : parseFloat(highPrice)
   const Pb = lowPrice < highPrice ? parseFloat(highPrice) : parseFloat(lowPrice)
-  const Plower = Math.min(Math.max(Pa, 1 / Pa), Math.max(Pb, 1 / Pb))
-  const Pupper = Math.max(Math.max(Pa, 1 / Pa), Math.max(Pb, 1 / Pb))
   const Pc = formattedPrice
-  const strike = (Pb * Pa) ** 0.5
-  const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
+  const Plower =
+    !isNaN(Pa) && !isNaN(Pb)
+      ? Math.min(Math.max(Pa, 1 / Pa), Math.max(Pb, 1 / Pb))
+      : Math.min(Math.max(Pc, 1 / Pc), Math.max(Pc, 1 / Pc)) / 1.5
+  const Pupper =
+    !isNaN(Pa) && !isNaN(Pb)
+      ? Math.max(Math.max(Pa, 1 / Pa), Math.max(Pb, 1 / Pb))
+      : Math.min(Math.max(Pc, 1 / Pc), Math.max(Pc, 1 / Pc)) * 1.5
+  const strike = (Pupper * Plower) ** 0.5
+  const r = (Pupper / Plower) ** 0.5
   const delta = Pc < Pupper && Pc > Plower ? 1 - (((strike * r) / Pc) ** 0.5 - 1) / (r - 1) : Pc < Plower ? 0 : 1
   const decs0 = pool ? pool.token0.decimals : 0
   const decs1 = pool ? pool.token1.decimals : 0
@@ -302,88 +321,200 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
   const startValue = liquidity
     ? Math.abs(Pa * parseFloat(liquidity.toString()) * (Pb ** 0.5 - Pa ** 0.5)) / 10 ** (decs0 / 2 + decs1 / 2)
     : 0
+  function add(Pc?: number, Plower?: number) {
+    return Pc && Plower ? Pc + Plower : 0
+  }
+
   return (
     <LinkRow to={positionSummaryLink}>
       <RowBetween>
         <PrimaryPositionIdData>
-          <DoubleCurrencyLogo currency0={currencyBase} currency1={currencyQuote} size={18} margin />
-          <DataText>
+          <Label end={1} fontWeight={400}>
+            <DoubleCurrencyLogo currency0={currencyBase} currency1={currencyQuote} size={18} margin />
+          </Label>
+          <Label end={1} fontWeight={400}>
             &nbsp;{currencyQuote?.symbol}&nbsp;/&nbsp;{currencyBase?.symbol}
-          </DataText>
-          <Badge>
-            <BadgeText>
-              <Trans>{new Percent(feeAmount, 1_000_000).toSignificant()}%</Trans>
-            </BadgeText>
-          </Badge>
-          &nbsp;
-          <RangeText>
+          </Label>
+          <Label end={1} fontWeight={400}>
+            {new Percent(feeAmount, 1_000_000).toSignificant()}%
+          </Label>
+          <Label>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20">
+              <g fill="#dedede">
+                <rect x="0" y="7" width="100%" height="3" />
+              </g>
+              <g fill={Pc < Pupper && Pc > Plower ? '#47b247' : Pc < Plower ? '#4682b4' : '#cc333f'}>
+                <rect
+                  x={
+                    1.5 * Pc < 1.1 * Pupper
+                      ? 50 - (100 / (3 * Pupper - 2 * Pc)) * (Pupper - Pc)
+                      : Pc / 2 > Plower / 1.1
+                      ? 50 - (100 / (2 * Pc - (2 * Plower) / 1.5)) * (Pupper - Pc)
+                      : 150 - (100 / Pc) * Pupper
+                  }
+                  y="7"
+                  width="100%"
+                  height="3"
+                />
+              </g>
+              <g fill="#dedede">
+                <rect
+                  x={
+                    1.5 * Pc < 1.1 * Pupper
+                      ? 50 - (100 / (3 * Pupper - 2 * Pc)) * (Plower - Pc)
+                      : Pc / 2 > Plower / 1.1
+                      ? 50 - (100 / (2 * Pc - (2 * Plower) / 1.5)) * (Plower - Pc)
+                      : 150 - (100 / Pc) * Plower
+                  }
+                  y="7"
+                  width="100%"
+                  height="3"
+                />
+              </g>
+              <line
+                x1={
+                  1.5 * Pc < 1.1 * Pupper
+                    ? 50 - (100 / (3 * Pupper - 2 * Pc)) * (Plower - Pc)
+                    : Pc / 2 > Plower / 1.1
+                    ? 50 - (100 / (2 * Pc - (2 * Plower) / 1.5)) * (Plower - Pc)
+                    : 150 - (100 / Pc) * Plower
+                }
+                x2={
+                  1.5 * Pc < 1.1 * Pupper
+                    ? 50 - (100 / (3 * Pupper - 2 * Pc)) * (Plower - Pc)
+                    : Pc / 2 > Plower / 1.1
+                    ? 50 - (100 / (2 * Pc - (2 * Plower) / 1.5)) * (Plower - Pc)
+                    : 150 - (100 / Pc) * Plower
+                }
+                y1="5"
+                y2="12"
+                stroke="#231f20"
+                strokeWidth="0.5"
+                strokeDasharray="0.5"
+              />
+              <text
+                x={
+                  1.5 * Pc < 1.1 * Pupper
+                    ? 50 - (100 / (3 * Pupper - 2 * Pc)) * (Plower - Pc) - 2
+                    : Pc / 2 > Plower / 1.1
+                    ? 50 - (100 / (2 * Pc - (2 * Plower) / 1.5)) * (Plower - Pc) - 2
+                    : 150 - (100 / Pc) * Plower - 2
+                }
+                y="18"
+                fontSize="3"
+              >
+                Pb
+              </text>
+              <line
+                x1={
+                  1.5 * Pc < 1.1 * Pupper
+                    ? 50 - (100 / (3 * Pupper - 2 * Pc)) * (strike - Pc)
+                    : Pc / 2 > Plower / 1.1
+                    ? 50 - (100 / (2 * Pc - (2 * Plower) / 1.5)) * (strike - Pc)
+                    : 150 - (100 / Pc) * strike
+                }
+                x2={
+                  1.5 * Pc < 1.1 * Pupper
+                    ? 50 - (100 / (3 * Pupper - 2 * Pc)) * (strike - Pc)
+                    : Pc / 2 > Plower / 1.1
+                    ? 50 - (100 / (2 * Pc - (2 * Plower) / 1.5)) * (strike - Pc)
+                    : 150 - (100 / Pc) * strike
+                }
+                y1="5"
+                y2="12"
+                stroke="#231f20"
+                strokeWidth="0.5"
+                strokeDasharray="0.5"
+              />
+              <text
+                x={
+                  1.5 * Pc < 1.1 * Pupper
+                    ? 50 - (100 / (3 * Pupper - 2 * Pc)) * (strike - Pc) - 1
+                    : Pc / 2 > Plower / 1.1
+                    ? 50 - (100 / (2 * Pc - (2 * Plower) / 1.5)) * (strike - Pc) - 1
+                    : 150 - (100 / Pc) * strike - 1
+                }
+                y="18"
+                fontSize="3"
+              >
+                K
+              </text>
+              <line
+                x1={(100 / Pc) * Pc - 50}
+                x2={(100 / Pc) * Pc - 50}
+                y1="5"
+                y2="12"
+                stroke="#231f20"
+                strokeWidth="0.5"
+              />
+              <text x={(100 / Pc) * Pc - 50 - 1} y="3" fontSize="3">
+                S
+              </text>
+              <line
+                x1={
+                  1.5 * Pc < 1.1 * Pupper
+                    ? 50 - (100 / (3 * Pupper - 2 * Pc)) * (Pupper - Pc)
+                    : Pc / 2 > Plower / 1.1
+                    ? 50 - (100 / (2 * Pc - (2 * Plower) / 1.5)) * (Pupper - Pc)
+                    : 150 - (100 / Pc) * Pupper
+                }
+                x2={
+                  1.5 * Pc < 1.1 * Pupper
+                    ? 50 - (100 / (3 * Pupper - 2 * Pc)) * (Pupper - Pc)
+                    : Pc / 2 > Plower / 1.1
+                    ? 50 - (100 / (2 * Pc - (2 * Plower) / 1.5)) * (Pupper - Pc)
+                    : 150 - (100 / Pc) * Pupper
+                }
+                y1="5"
+                y2="12"
+                stroke="#231f20"
+                strokeWidth="0.5"
+                strokeDasharray="0.5"
+              />
+              <text
+                x={
+                  1.5 * Pc < 1.1 * Pupper
+                    ? 50 - (100 / (3 * Pupper - 2 * Pc)) * (Pupper - Pc) - 2
+                    : Pc / 2 > Plower / 1.1
+                    ? 50 - (100 / (2 * Pc - (2 * Plower) / 1.5)) * (Pupper - Pc) - 2
+                    : 150 - (100 / Pc) * Pupper - 2
+                }
+                y="18"
+                fontSize="3"
+              >
+                Pa
+              </text>
+            </svg>
+          </Label>
+          <Label end={1} fontWeight={400}>
+            Uncollected fees:{''}
+            {''} {fg ? fg.toFixed(3) : '-'}
+            {''} ETH (
             <Trans>
-              {Pc > Pupper ? <TYPE.red>{formatAmount(1000 / formattedPrice)}</TYPE.red> : formatAmount(1000 / Pupper)}
+              {fg && yMax / Pc + xMax > 0
+                ? ((100 * parseFloat(fg.toSignificant(5))) / (yMax / Pc + xMax)).toFixed(1)
+                : '-'}
+              %
             </Trans>
-          </RangeText>{' '}
-          <HideSmall>
-            <DoubleArrow>{Pc > Pupper ? '..........' : '⟷'}</DoubleArrow>{' '}
-          </HideSmall>
-          <RangeText>
-            <Trans>
-              {Pc > Plower && Pc < Pupper ? (
-                <TYPE.blue>{formatAmount(1000 / formattedPrice)}</TYPE.blue>
-              ) : Pc < Plower ? (
-                formatAmount(1000 / Plower)
-              ) : (
-                formatAmount(1000 / Pupper)
-              )}
-            </Trans>
-          </RangeText>
-          <HideSmall>
-            <DoubleArrow>{Pc < Plower ? '..........' : '⟷'}</DoubleArrow>{' '}
-          </HideSmall>
-          <RangeText>
-            <Trans>
-              {Pc < Plower ? (
-                <TYPE.green>{formatAmount(1000 / formattedPrice)}</TYPE.green>
-              ) : (
-                formatAmount(1000 / Plower)
-              )}
-            </Trans>{' '}
-            <Trans>mETH</Trans>
-          </RangeText>
-        </PrimaryPositionIdData>
-        <RangeText>
-          <ExtentsText>
-            <Trans>Uncollected fees:</Trans>
-          </ExtentsText>
-          <Trans>{fg.toFixed(3)}</Trans>
-          {''} ETH (
-          <Trans>
-            {fg && yMax / Pc + xMax > 0 ? ((100 * parseFloat(fg.toSignificant(5))) / (yMax / Pc + xMax)).toFixed(1) : 0}
-            %
-          </Trans>
-          )
-        </RangeText>
-        <RangeText>
-          <ExtentsText>
-            <Trans>Delta:</Trans>
-          </ExtentsText>
-          <Trans>{(delta * 100).toFixed(0)}</Trans>
-        </RangeText>
-        <RangeText>
-          <ExtentsText>
-            <Trans>Returns</Trans>
-          </ExtentsText>
-          <Trans>
+            )
+          </Label>
+          <Label end={1} fontWeight={400}>
+            Delta:{(delta * 100).toFixed(0)}
+          </Label>
+          <Label end={1} fontWeight={400}>
+            Returns:
             {formattedPrice < Plower
               ? ((100 * Pupper) / Plower - 100).toFixed(0)
               : ((100 * Pupper) / formattedPrice - 100).toFixed(0)}
             %
-          </Trans>
-        </RangeText>
-        <RangeBadge
-          removed={removed}
-          inRange={delta > 0 && delta < 1}
-          belowRange={delta == 1}
-          aboveRange={delta == 0}
-        />
+          </Label>
+          <RangeBadge
+            removed={removed}
+            inRange={delta > 0 && delta < 1}
+            belowRange={delta == 1}
+            aboveRange={delta == 0}
+          />
+        </PrimaryPositionIdData>
       </RowBetween>
       {priceLower && priceUpper ? (
         <RowBetween>
