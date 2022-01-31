@@ -37,8 +37,6 @@ function useV3PositionsFromTokenIds(tokenIds: BigNumber[] | undefined): UseV3Pos
           token1: result.token1,
           tokensOwed0: result.tokensOwed0,
           tokensOwed1: result.tokensOwed1,
-          depositedToken0: result.depositedToken0,
-          depositedToken1: result.depositedToken1,
         }
       })
     }

@@ -322,7 +322,6 @@ export function PositionPage({
   const theme = useTheme()
   const parsedTokenId = tokenIdFromUrl ? BigNumber.from(tokenIdFromUrl) : undefined
   const { loading, position: positionDetails } = useV3PositionFromTokenId(parsedTokenId)
-
   const {
     token0: token0Address,
     token1: token1Address,
@@ -333,8 +332,6 @@ export function PositionPage({
     tokenId,
     tokensOwed0,
     tokensOwed1,
-    depositedToken0,
-    depositedToken1,
   } = positionDetails || {}
 
   const removed = liquidity?.eq(0)
@@ -580,7 +577,7 @@ export function PositionPage({
   const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
   const dp = Pb > Pa ? Pb - Pa : Pa - Pb
   const startPrice = midpointStart ? strike : Pa
-  const dtot = position && depositedToken0 && liquidity ? liquidity : 0
+  const dtot = position && liquidity ? liquidity : 0
   const dL = position
     ? Pc > Pa && Pc < Pb
       ? amtETH / (Pc ** 0.5 - Pa ** 0.5)
