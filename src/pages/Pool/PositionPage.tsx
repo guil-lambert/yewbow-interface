@@ -22,8 +22,9 @@ import useIsTickAtLimit from 'hooks/useIsTickAtLimit'
 import { PoolState, usePool } from 'hooks/usePools'
 import useUSDCPrice from 'hooks/useUSDCPrice'
 import { useV3PositionFees } from 'hooks/useV3PositionFees'
-import { useV3PositionFromTokenId } from 'hooks/useV3Positions'
+import { useGQLPosition, useV3PositionFromTokenId } from 'hooks/useV3Positions'
 import { useActiveWeb3React } from 'hooks/web3'
+import JSBI from 'jsbi'
 import { useCallback, useMemo, useState } from 'react'
 import ReactGA from 'react-ga'
 import { Link, RouteComponentProps } from 'react-router-dom'
@@ -334,6 +335,8 @@ export function PositionPage({
     tokensOwed1,
   } = positionDetails || {}
 
+  const positions = useGQLPosition(tokenId ? tokenId.toNumber() : 1)
+
   const removed = liquidity?.eq(0)
 
   const token0 = useToken(token0Address)
@@ -481,9 +484,43 @@ export function PositionPage({
   const poolAddress =
     currency0 && currency1 && feeAmount ? Pool.getAddress(currency0?.wrapped, currency1?.wrapped, feeAmount) : ' '
 
+  const depositedToken0 = positions.positions ? positions.positions[0].depositedToken0 : 1
+  const depositedToken1 = positions.positions ? positions.positions[0].depositedToken1 : 1
+  const collectedFeesToken0 = positions.positions ? positions.positions[0].collectedFeesToken0 : 1
+  const collectedFeesToken1 = positions.positions ? positions.positions[0].collectedFeesToken1 : 1
+  const positionLiquidity = positions.positions ? positions.positions[0].liquidity : 1
+  const bigLiq: BigNumber = positionLiquidity
+  const feeGrowthInside0LastX128 = positions.positions ? positions.positions[0].feeGrowthInside0LastX128 : 1
+  const feeGrowthInside1LastX128 = positions.positions ? positions.positions[0].feeGrowthInside1LastX128 : 1
+  const b256 = BigNumber.from('115792089237316195423570985008687907853269984665640564039457584007913129639936')
+  const b128 = BigNumber.from('340282366920938463463374607431768211456')
+  const feeGrowthLast0 = b256.sub(BigNumber.from(feeGrowthInside0LastX128))
+  const feeGrowthLast1 = b256.sub(BigNumber.from(feeGrowthInside1LastX128))
+  const feeGrowthGlobal0X128 = positions.positions ? positions.positions[0].pool.feeGrowthGlobal0X128 : 1
+  const feeGrowthGlobal1X128 = positions.positions ? positions.positions[0].pool.feeGrowthGlobal1X128 : 1
+  const feeLowerOutside0X128 = positions.positions ? positions.positions[0].tickLower.feeGrowthOutside0X128 : 1
+  const feeLowerOutside1X128 = positions.positions ? positions.positions[0].tickLower.feeGrowthOutside1X128 : 1
+  const feeUpperOutside0X128 = positions.positions ? positions.positions[0].tickUpper.feeGrowthOutside0X128 : 1
+  const feeUpperOutside1X128 = positions.positions ? positions.positions[0].tickUpper.feeGrowthOutside1X128 : 1
+  //const dep0 = positions.positions.find((id) => id == parseInt(tokenId)).depositedToken0
+  const dec0 = pool ? pool.token0.decimals : 18
+  const dec1 = pool ? pool.token1.decimals : 18
+  const feeVal0 =
+    feeUpperOutside0X128 < feeLowerOutside0X128 && feeGrowthInside0LastX128 > 2 ** 128
+      ? ((feeUpperOutside0X128 - feeLowerOutside0X128 + parseInt(feeGrowthLast0.toString())) * positionLiquidity) /
+        (2 ** 128 * 10 ** dec0)
+      : ((feeUpperOutside0X128 - feeLowerOutside0X128 - feeGrowthInside0LastX128) * positionLiquidity) /
+        (2 ** 128 * 10 ** dec0)
+
+  const feeVal1 =
+    feeUpperOutside1X128 < feeLowerOutside1X128 && feeGrowthInside1LastX128 > 2 ** 128
+      ? ((feeUpperOutside1X128 - feeLowerOutside1X128 + parseInt(feeGrowthLast1.toString())) * positionLiquidity) /
+        (2 ** 128 * 10 ** dec1)
+      : ((feeUpperOutside1X128 - feeLowerOutside1X128 - feeGrowthInside1LastX128) * positionLiquidity) /
+        (2 ** 128 * 10 ** dec1)
+
   const feeValueUpper = inverted ? feeValue0 : feeValue1
   const feeValueLower = inverted ? feeValue1 : feeValue0
-
   // check if price is within range
   const below =
     pool && typeof tickLower === 'number' && typeof tickUpper === 'number'
@@ -576,7 +613,14 @@ export function PositionPage({
   const strike = (Pb * Pa) ** 0.5
   const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
   const dp = Pb > Pa ? Pb - Pa : Pa - Pb
-  const startPrice = midpointStart ? strike : Pa
+  const startPrice = pool
+    ? depositedToken0 == 0
+      ? Pa
+      : depositedToken1 == 0
+      ? Pb
+      : ((10 ** pool.token0.decimals * depositedToken0) / positionLiquidity + Pa ** 0.5) ** 2
+    : Pa
+
   const dtot = position && liquidity ? liquidity : 0
   const dL = position
     ? Pc > Pa && Pc < Pb
@@ -585,10 +629,8 @@ export function PositionPage({
       ? amtTok / (Pa ** -0.5 - Pb ** -0.5)
       : amtETH / (Pb ** 0.5 - Pa ** 0.5)
     : 0
-  const dE = midpointStart
-    ? (dL * (Pb ** 0.5 - strike ** 0.5)) / (Pb * strike) ** 0.5
-    : (dL * (Pb ** 0.5 - Pa ** 0.5)) / (Pb * Pa) ** 0.5
-  const baseValue = midpointStart ? (dE * 2 * strike * (r ** 0.5 - 1)) / (r - 1) : dE * startPrice
+  const dE = (dL * (Pb ** 0.5 - startPrice ** 0.5)) / (Pb * startPrice) ** 0.5
+  const baseValue = dE * startPrice
   //const BE = (feeValueTotal * (1 - r)) / dE + strike * (-2 * r ** 0.5 + 2 * r)
   const BE = (baseValue * (1 - r) - feeValueETH * (1 - r)) / (dE + feeValueToken * (1 - r))
   const Pe = (startPrice - feeValueETH / dE) / (1 + feeValueToken / dE)
@@ -605,6 +647,14 @@ export function PositionPage({
     : Pa * 0.95 - dp
   const Pmax = Pc > Pb + dp ? Pc * 1.05 : Pc < Pa - dp ? Pb * 1.05 + (Pa - Pc) : Pb * 1.05 + dp
   const topFees = dE * strike + feeValueTotal - baseValue
+  const profit =
+    positionLiquidity == 0
+      ? (collectedFeesToken1 - depositedToken1) * Pc + (collectedFeesToken0 - depositedToken0)
+      : Pc < Pb && Pc > Pa
+      ? (dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) + feeValueETH + feeValueToken * Pc - baseValue
+      : Pc < Pa
+      ? dE * Pc + feeValueETH + feeValueToken * Pc - baseValue
+      : dE * strike + feeValueETH + feeValueToken * Pc - baseValue
   const onOptimisticChain = chainId && [SupportedChainId.OPTIMISM, SupportedChainId.OPTIMISTIC_KOVAN].includes(chainId)
   const showCollectAsWeth = Boolean(
     ownsNFT &&
@@ -1014,6 +1064,64 @@ export function PositionPage({
                       bottom: 40,
                     }}
                   >
+                    <defs>
+                      <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset={off} stopColor="green" stopOpacity={1} />
+                        <stop offset={off} stopColor="red" stopOpacity={1} />
+                      </linearGradient>
+                    </defs>
+                    <ReferenceArea
+                      x1={Pmin}
+                      x2={Pa}
+                      y1={dE * strike + feeValueTotal - baseValue}
+                      y2={dE * strike * 1.125 + feeValueTotal - baseValue}
+                      fillOpacity={0}
+                      label={'100% token'}
+                    />
+                    <ReferenceArea
+                      x1={Pb}
+                      x2={Pmax}
+                      y1={dE * strike + feeValueTotal - baseValue}
+                      y2={dE * strike * 1.125 + feeValueTotal - baseValue}
+                      fillOpacity={0}
+                      label={'100% ETH'}
+                    />
+                    <ReferenceArea
+                      x1={Pa}
+                      x2={Pb}
+                      y1={dE * Pmin - baseValue}
+                      y2={dE * strike * 1.125 + feeValueTotal - baseValue}
+                      fillOpacity={0.33}
+                    />
+                    <Area type="basis" dataKey="y" stroke="#000" fill="url(#splitColor)" activeDot={false} />
+                    <ReferenceLine
+                      y={dE * strike + feeValueETH + feeValueToken * Pb - baseValue}
+                      stroke="#000"
+                      strokeDasharray="1 4"
+                    />
+                    <ReferenceLine y={0} stroke="#000" />
+                    <Scatter data={dataPc} />
+                    <Scatter data={dataPe} />
+                    <Scatter line={{ stroke: '#000', strokeWidth: 1.5 }} data={data} dataKey="x" />
+                    <Tooltip
+                      labelFormatter={() => ' '}
+                      allowEscapeViewBox={{
+                        x: true,
+                        y: true,
+                      }}
+                      position={{ x: 238, y: 225 }}
+                      coordinate={{ x: -100, y: 10 }}
+                      cursor={{ stroke: 'red', strokeWidth: 1 }}
+                    />
+                    <ReferenceArea
+                      x1={Pmin}
+                      x2={Pmax}
+                      y1={(dE * Pmin) / 1.125 - baseValue}
+                      y2={dE * Pmin - baseValue}
+                      fillOpacity={100}
+                      fill={'#fff'}
+                      label={'Profit: ' + profit.toFixed(4) + baseSymbol}
+                    />
                     <XAxis
                       dataKey="x"
                       name="Price"
@@ -1036,59 +1144,10 @@ export function PositionPage({
                         (dE * strike + feeValueETH + feeValueToken * Pb - baseValue).toPrecision(3),
                       ]}
                       dataKey="y"
-                      domain={[dE * Pmin - baseValue, dE * strike * 1.25 + feeValueTotal - baseValue]}
+                      domain={[(dE * Pmin) / 1.125 - baseValue, dE * strike * 1.125 + feeValueTotal - baseValue]}
                       label={{ value: 'Profit/Loss', angle: -90, position: 'insideLeft', offset: 5 }}
                     />
                     <ZAxis type="number" dataKey="z" range={[1, 100]} />
-                    <defs>
-                      <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset={off} stopColor="green" stopOpacity={1} />
-                        <stop offset={off} stopColor="red" stopOpacity={1} />
-                      </linearGradient>
-                    </defs>
-                    <ReferenceArea
-                      x1={Pmin}
-                      x2={Pa}
-                      y1={dE * strike + feeValueTotal - baseValue}
-                      y2={dE * strike * 1.25 + feeValueTotal - baseValue}
-                      fillOpacity={0}
-                      label={'100% token'}
-                    />
-                    <ReferenceArea
-                      x1={Pb}
-                      x2={Pmax}
-                      y1={dE * strike + feeValueTotal - baseValue}
-                      y2={dE * strike * 1.25 + feeValueTotal - baseValue}
-                      fillOpacity={0}
-                      label={'100% ETH'}
-                    />
-                    <ReferenceArea
-                      x1={Pa}
-                      x2={Pb}
-                      y1={dE * Pmin - baseValue}
-                      y2={dE * strike * 1.25 + feeValueTotal - baseValue}
-                      fillOpacity={0.5}
-                    />
-                    <Area type="basis" dataKey="y" stroke="#000" fill="url(#splitColor)" activeDot={false} />
-                    <ReferenceLine
-                      y={dE * strike + feeValueETH + feeValueToken * Pb - baseValue}
-                      stroke="#000"
-                      strokeDasharray="1 4"
-                    />
-                    <ReferenceLine y={0} stroke="#000" />
-                    <Scatter data={dataPc} />
-                    <Scatter data={dataPe} />
-                    <Scatter line={{ stroke: '#000', strokeWidth: 1.5 }} data={data} dataKey="x" />
-                    <Tooltip
-                      labelFormatter={() => ' '}
-                      allowEscapeViewBox={{
-                        x: true,
-                        y: true,
-                      }}
-                      position={{ x: 238, y: 225 }}
-                      coordinate={{ x: -100, y: 10 }}
-                      cursor={{ stroke: 'red', strokeWidth: 1 }}
-                    />
                   </ComposedChart>
                 </div>
               </DarkCard>

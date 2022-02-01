@@ -37,6 +37,39 @@ export const api = createApi({
         },
       }),
     }),
+    GQLPosition: builder.query({
+      query: ({ id }) => ({
+        document: gql`
+          query GQLPosition($id: Int!) {
+            positions(where: { id: $id }) {
+              id
+              liquidity
+              depositedToken0
+              depositedToken1
+              collectedFeesToken0
+              collectedFeesToken1
+              feeGrowthInside0LastX128
+              feeGrowthInside1LastX128
+              tickLower {
+                feeGrowthOutside0X128
+                feeGrowthOutside1X128
+              }
+              tickUpper {
+                feeGrowthOutside0X128
+                feeGrowthOutside1X128
+              }
+              pool {
+                feeGrowthGlobal0X128
+                feeGrowthGlobal1X128
+              }
+            }
+          }
+        `,
+        variables: {
+          id,
+        },
+      }),
+    }),
     feeTierDistribution: builder.query({
       query: ({ token0, token1 }) => ({
         document: gql`
