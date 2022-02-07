@@ -673,7 +673,7 @@ export function PositionPage({
       !onOptimisticChain
   )
 
-  const data = []
+  const dataPayoff: any[] = []
   for (let pt = 0; pt <= 100; pt++) {
     const xx = ((Pmax - Pmin) * pt) / 100 + Pmin
     const yy =
@@ -685,7 +685,7 @@ export function PositionPage({
         ? dE * strike + feeValueETH + feeValueToken * xx - baseValue
         : 0
 
-    data.push({ x: xx.toPrecision(5), y: yy.toPrecision(5) })
+    dataPayoff.push({ x: xx.toPrecision(5), y: yy.toPrecision(5) })
   }
 
   const dataH = [
@@ -741,8 +741,8 @@ export function PositionPage({
   ]
   const vol = pool ? pool.liquidity : 0
   const gradientOffset = () => {
-    const dataMax = Math.max(...data.map((i) => parseFloat(i.y)))
-    const dataMin = Math.min(...data.map((i) => parseFloat(i.y)))
+    const dataMax = Math.max(...dataPayoff.map((i) => parseFloat(i.y)))
+    const dataMin = Math.min(...dataPayoff.map((i) => parseFloat(i.y)))
 
     if (dataMax <= 0) {
       return 0
@@ -858,7 +858,7 @@ export function PositionPage({
                   <ComposedChart
                     width={375}
                     height={400}
-                    data={data0}
+                    data={dataPayoff}
                     margin={{
                       top: 50,
                       right: 10,
@@ -892,7 +892,7 @@ export function PositionPage({
                       x1={Pa}
                       x2={Pb}
                       y1={dE * Pmin - baseValue}
-                      y2={dE * strike * 1.125 + feeValueTotal - baseValue}
+                      y2={dE * strike * 1.25 + feeValueTotal - baseValue}
                       fillOpacity={0.33}
                     />
                     <Area type="basis" dataKey="y" stroke="#000" fill="url(#splitColor)" activeDot={false} />
@@ -904,7 +904,7 @@ export function PositionPage({
                     <ReferenceLine y={0} stroke="#000" />
                     <Scatter data={dataPc} />
                     <Scatter data={dataPe} />
-                    <Scatter line={{ stroke: '#000', strokeWidth: 1.5 }} data={data0} dataKey="x" />
+                    <Scatter line={{ stroke: '#000', strokeWidth: 1.5 }} data={dataPayoff} dataKey="x" />
                     <Tooltip
                       labelFormatter={() => ' '}
                       allowEscapeViewBox={{
