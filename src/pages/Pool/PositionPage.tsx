@@ -22,7 +22,7 @@ import useIsTickAtLimit from 'hooks/useIsTickAtLimit'
 import { PoolState, usePool } from 'hooks/usePools'
 import useUSDCPrice from 'hooks/useUSDCPrice'
 import { useV3PositionFees } from 'hooks/useV3PositionFees'
-import { useGQLPosition, useV3PositionFromTokenId } from 'hooks/useV3Positions'
+import { useGQLPositions, useV3PositionFromTokenId } from 'hooks/useV3Positions'
 import { useActiveWeb3React } from 'hooks/web3'
 import JSBI from 'jsbi'
 import { useCallback, useMemo, useState } from 'react'
@@ -334,8 +334,12 @@ export function PositionPage({
     tokensOwed0,
     tokensOwed1,
   } = positionDetails || {}
+  const addTransaction = useTransactionAdder()
+  const positionManager = useV3NFTPositionManagerContract()
 
-  const positions = useGQLPosition(tokenId ? tokenId.toNumber() : 1)
+  const owner = useSingleCallResult(!!tokenId ? positionManager : null, 'ownerOf', [tokenId]).result?.[0]
+
+  const positions = useGQLPositions(owner ? owner.toString() : 1)
 
   const removed = liquidity?.eq(0)
 
@@ -424,8 +428,6 @@ export function PositionPage({
     return amount0.add(amount1)
   }, [price0, price1, position])
 
-  const addTransaction = useTransactionAdder()
-  const positionManager = useV3NFTPositionManagerContract()
   const collect = useCallback(() => {
     if (!chainId || !feeValue0 || !feeValue1 || !positionManager || !account || !tokenId || !library) return
 
@@ -479,46 +481,35 @@ export function PositionPage({
       })
   }, [chainId, feeValue0, feeValue1, positionManager, account, tokenId, addTransaction, library])
 
-  const owner = useSingleCallResult(!!tokenId ? positionManager : null, 'ownerOf', [tokenId]).result?.[0]
+  //const owner = useSingleCallResult(!!tokenId ? positionManager : null, 'ownerOf', [tokenId]).result?.[0]
   const ownsNFT = owner === account || positionDetails?.operator === account
   const poolAddress =
     currency0 && currency1 && feeAmount ? Pool.getAddress(currency0?.wrapped, currency1?.wrapped, feeAmount) : ' '
 
-  const depositedToken0 = positions.positions ? positions.positions[0].depositedToken0 : 1
-  const depositedToken1 = positions.positions ? positions.positions[0].depositedToken1 : 1
-  const collectedFeesToken0 = positions.positions ? positions.positions[0].collectedFeesToken0 : 1
-  const collectedFeesToken1 = positions.positions ? positions.positions[0].collectedFeesToken1 : 1
-  const positionLiquidity = positions.positions ? positions.positions[0].liquidity : 1
-  const bigLiq: BigNumber = positionLiquidity
-  const feeGrowthInside0LastX128 = positions.positions ? positions.positions[0].feeGrowthInside0LastX128 : 1
-  const feeGrowthInside1LastX128 = positions.positions ? positions.positions[0].feeGrowthInside1LastX128 : 1
+  const p0 = tokenId && positions.positions ? positions.positions.filter((obj) => obj.id == tokenId.toString()) : 0
+  const currentPosition =
+    tokenId && positions.positions ? positions.positions.filter((obj) => obj.id == tokenId.toString()) : 0
+  //const positionId2 = positions.positions ? positions.positions.findIndex((id) => parseInt(id) === 172886) : -1
+  const depositedToken0 = currentPosition ? currentPosition[0].depositedToken0 : 1
+  const depositedToken1 = currentPosition ? currentPosition[0].depositedToken1 : 1
+  const collectedFeesToken0 = currentPosition ? currentPosition[0].collectedFeesToken0 : 1
+  const collectedFeesToken1 = currentPosition ? currentPosition[0].collectedFeesToken1 : 1
+  const positionLiquidity = currentPosition ? currentPosition[0].liquidity : 1
+  const feeGrowthInside0LastX128 = currentPosition ? currentPosition[0].feeGrowthInside0LastX128 : 1
+  const feeGrowthInside1LastX128 = currentPosition ? currentPosition[0].feeGrowthInside1LastX128 : 1
   const b256 = BigNumber.from('115792089237316195423570985008687907853269984665640564039457584007913129639936')
   const b128 = BigNumber.from('340282366920938463463374607431768211456')
   const feeGrowthLast0 = b256.sub(BigNumber.from(feeGrowthInside0LastX128))
   const feeGrowthLast1 = b256.sub(BigNumber.from(feeGrowthInside1LastX128))
-  const feeGrowthGlobal0X128 = positions.positions ? positions.positions[0].pool.feeGrowthGlobal0X128 : 1
-  const feeGrowthGlobal1X128 = positions.positions ? positions.positions[0].pool.feeGrowthGlobal1X128 : 1
-  const feeLowerOutside0X128 = positions.positions ? positions.positions[0].tickLower.feeGrowthOutside0X128 : 1
-  const feeLowerOutside1X128 = positions.positions ? positions.positions[0].tickLower.feeGrowthOutside1X128 : 1
-  const feeUpperOutside0X128 = positions.positions ? positions.positions[0].tickUpper.feeGrowthOutside0X128 : 1
-  const feeUpperOutside1X128 = positions.positions ? positions.positions[0].tickUpper.feeGrowthOutside1X128 : 1
+  const feeGrowthGlobal0X128 = currentPosition ? currentPosition[0].pool.feeGrowthGlobal0X128 : 1
+  const feeGrowthGlobal1X128 = currentPosition ? currentPosition[0].pool.feeGrowthGlobal1X128 : 1
+  const feeLowerOutside0X128 = currentPosition ? currentPosition[0].tickLower.feeGrowthOutside0X128 : 1
+  const feeLowerOutside1X128 = currentPosition ? currentPosition[0].tickLower.feeGrowthOutside1X128 : 1
+  const feeUpperOutside0X128 = currentPosition ? currentPosition[0].tickUpper.feeGrowthOutside0X128 : 1
+  const feeUpperOutside1X128 = currentPosition ? currentPosition[0].tickUpper.feeGrowthOutside1X128 : 1
   //const dep0 = positions.positions.find((id) => id == parseInt(tokenId)).depositedToken0
   const dec0 = pool ? pool.token0.decimals : 18
   const dec1 = pool ? pool.token1.decimals : 18
-  const feeVal0 =
-    feeUpperOutside0X128 < feeLowerOutside0X128 && feeGrowthInside0LastX128 > 2 ** 128
-      ? ((feeUpperOutside0X128 - feeLowerOutside0X128 + parseInt(feeGrowthLast0.toString())) * positionLiquidity) /
-        (2 ** 128 * 10 ** dec0)
-      : ((feeUpperOutside0X128 - feeLowerOutside0X128 - feeGrowthInside0LastX128) * positionLiquidity) /
-        (2 ** 128 * 10 ** dec0)
-
-  const feeVal1 =
-    feeUpperOutside1X128 < feeLowerOutside1X128 && feeGrowthInside1LastX128 > 2 ** 128
-      ? ((feeUpperOutside1X128 - feeLowerOutside1X128 + parseInt(feeGrowthLast1.toString())) * positionLiquidity) /
-        (2 ** 128 * 10 ** dec1)
-      : ((feeUpperOutside1X128 - feeLowerOutside1X128 - feeGrowthInside1LastX128) * positionLiquidity) /
-        (2 ** 128 * 10 ** dec1)
-
   const feeValueUpper = inverted ? feeValue0 : feeValue1
   const feeValueLower = inverted ? feeValue1 : feeValue0
   // check if price is within range
@@ -591,25 +582,25 @@ export function PositionPage({
       ? token1Address == WETH9_EXTENDED[chainId]?.address
         ? parseFloat(position?.amount1.toSignificant(4)) + parseFloat(position?.amount0.toSignificant(4)) * Pc
         : parseFloat(position?.amount0.toSignificant(4)) + parseFloat(position?.amount1.toSignificant(4)) * Pc
-      : 999
+      : 0.001
   const feeValueETH =
     feeValue0 && feeValue1 && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
         ? parseFloat(feeValue1.toSignificant(6))
         : parseFloat(feeValue0.toSignificant(6))
-      : 0
+      : 0.001
   const feeValueToken =
     feeValue0 && feeValue1 && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
         ? parseFloat(feeValue0.toSignificant(6))
         : parseFloat(feeValue1.toSignificant(6))
-      : 0
+      : 0.001
   const feeValueTotal =
     feeValue0 && feeValue1 && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
         ? parseFloat(feeValue1.toSignificant(6)) + parseFloat(feeValue0.toSignificant(6)) * Pc
         : parseFloat(feeValue0.toSignificant(6)) + parseFloat(feeValue1.toSignificant(6)) * Pc
-      : 888
+      : 0.001
   const strike = (Pb * Pa) ** 0.5
   const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
   const dp = Pb > Pa ? Pb - Pa : Pa - Pb
@@ -647,14 +638,30 @@ export function PositionPage({
     : Pa * 0.95 - dp
   const Pmax = Pc > Pb + dp ? Pc * 1.05 : Pc < Pa - dp ? Pb * 1.05 + (Pa - Pc) : Pb * 1.05 + dp
   const topFees = dE * strike + feeValueTotal - baseValue
-  const profit =
-    positionLiquidity == 0
-      ? (collectedFeesToken1 - depositedToken1) * Pc + (collectedFeesToken0 - depositedToken0)
-      : Pc < Pb && Pc > Pa
-      ? (dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) + feeValueETH + feeValueToken * Pc - baseValue
-      : Pc < Pa
-      ? dE * Pc + feeValueETH + feeValueToken * Pc - baseValue
-      : dE * strike + feeValueETH + feeValueToken * Pc - baseValue
+  const profit = removed
+    ? collectedFeesToken1 - depositedToken1 + (collectedFeesToken0 - depositedToken1) * Pc
+    : Pc < Pb && Pc > Pa
+    ? (dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) + feeValueETH + feeValueToken * Pc - baseValue
+    : Pc < Pa
+    ? dE * Pc + feeValueETH + feeValueToken * Pc - baseValue
+    : dE * strike + feeValueETH + feeValueToken * Pc - baseValue
+  const feeGuts0 =
+    Pc < Pb && Pc > Pa
+      ? feeGrowthGlobal0X128 - feeUpperOutside0X128 - feeLowerOutside0X128
+      : feeUpperOutside0X128 - feeLowerOutside0X128
+  const feeGuts1 =
+    Pc < Pb && Pc > Pa
+      ? feeGrowthGlobal1X128 - feeUpperOutside1X128 - feeLowerOutside1X128
+      : feeUpperOutside1X128 - feeLowerOutside1X128
+  const feeVal0 =
+    feeGrowthInside0LastX128 > 2 ** 128
+      ? ((feeGuts0 + parseInt(feeGrowthLast0.toString())) * positionLiquidity) / (2 ** 128 * 10 ** dec0)
+      : ((feeGuts0 - feeGrowthInside0LastX128) * positionLiquidity) / (2 ** 128 * 10 ** dec0)
+
+  const feeVal1 =
+    feeGrowthInside1LastX128 > 2 ** 128
+      ? ((feeGuts1 + parseInt(feeGrowthLast1.toString())) * positionLiquidity) / (2 ** 128 * 10 ** dec1)
+      : ((feeGuts1 - feeGrowthInside1LastX128) * positionLiquidity) / (2 ** 128 * 10 ** dec1)
   const onOptimisticChain = chainId && [SupportedChainId.OPTIMISM, SupportedChainId.OPTIMISTIC_KOVAN].includes(chainId)
   const showCollectAsWeth = Boolean(
     ownsNFT &&
@@ -665,227 +672,22 @@ export function PositionPage({
       !collectMigrationHash &&
       !onOptimisticChain
   )
-  const data = [
-    {
-      x: Pmin.toPrecision(5),
-      y: (dE * Pmin + feeValueETH + feeValueToken * Pmin - baseValue).toPrecision(5),
-    },
-    {
-      x: (Pmin + (1 * (Pa - Pmin)) / 10).toPrecision(5),
-      y: (
-        dE * (Pmin + (1 * (Pa - Pmin)) / 10) +
-        feeValueETH +
-        feeValueToken * (Pmin + (1 * (Pa - Pmin)) / 5) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pmin + (2 * (Pa - Pmin)) / 10).toPrecision(5),
-      y: (
-        dE * (Pmin + (2 * (Pa - Pmin)) / 10) +
-        feeValueETH +
-        feeValueToken * (Pmin + (2 * (Pa - Pmin)) / 5) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pmin + (3 * (Pa - Pmin)) / 10).toPrecision(5),
-      y: (
-        dE * (Pmin + (3 * (Pa - Pmin)) / 10) +
-        feeValueETH +
-        feeValueToken * (Pmin + (3 * (Pa - Pmin)) / 5) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pmin + (4 * (Pa - Pmin)) / 10).toPrecision(5),
-      y: (
-        dE * (Pmin + (4 * (Pa - Pmin)) / 10) +
-        feeValueETH +
-        feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pmin + (5 * (Pa - Pmin)) / 10).toPrecision(5),
-      y: (
-        dE * (Pmin + (5 * (Pa - Pmin)) / 10) +
-        feeValueETH +
-        feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pmin + (6 * (Pa - Pmin)) / 10).toPrecision(5),
-      y: (
-        dE * (Pmin + (6 * (Pa - Pmin)) / 10) +
-        feeValueETH +
-        feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pmin + (7 * (Pa - Pmin)) / 10).toPrecision(5),
-      y: (
-        dE * (Pmin + (7 * (Pa - Pmin)) / 10) +
-        feeValueETH +
-        feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pmin + (8 * (Pa - Pmin)) / 10).toPrecision(5),
-      y: (
-        dE * (Pmin + (8 * (Pa - Pmin)) / 10) +
-        feeValueETH +
-        feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pmin + (9 * (Pa - Pmin)) / 10).toPrecision(5),
-      y: (
-        dE * (Pmin + (9 * (Pa - Pmin)) / 10) +
-        feeValueETH +
-        feeValueToken * (Pmin + (4 * (Pa - Pmin)) / 5) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: Pa.toPrecision(5),
-      y: (dE * Pa + feeValueETH + feeValueToken * Pa - baseValue).toPrecision(5),
-    },
-    {
-      x: (Pa + (1 * dp) / 10).toPrecision(5),
-      y: (
-        (dE * (2 * (strike * (Pa + (1 * dp) / 10) * r) ** 0.5 - strike - Pa - (1 * dp) / 10)) / (r - 1) +
-        feeValueETH +
-        feeValueToken * (Pa + (1 * dp) / 10) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pa + (2 * dp) / 10).toPrecision(5),
-      y: (
-        (dE * (2 * (strike * (Pa + (2 * dp) / 10) * r) ** 0.5 - strike - Pa - (2 * dp) / 10)) / (r - 1) +
-        feeValueETH +
-        feeValueToken * (Pa + (2 * dp) / 10) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pa + (3 * dp) / 10).toPrecision(5),
-      y: (
-        (dE * (2 * (strike * (Pa + (3 * dp) / 10) * r) ** 0.5 - strike - Pa - (3 * dp) / 10)) / (r - 1) +
-        feeValueETH +
-        feeValueToken * (Pa + (3 * dp) / 10) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pa + (4 * dp) / 10).toPrecision(5),
-      y: (
-        (dE * (2 * (strike * (Pa + (4 * dp) / 10) * r) ** 0.5 - strike - Pa - (4 * dp) / 10)) / (r - 1) +
-        feeValueETH +
-        feeValueToken * (Pa + (4 * dp) / 10) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pa + (5 * dp) / 10).toPrecision(5),
-      y: (
-        (dE * (2 * (strike * (Pa + (5 * dp) / 10) * r) ** 0.5 - strike - Pa - (5 * dp) / 10)) / (r - 1) +
-        feeValueETH +
-        feeValueToken * (Pa + (5 * dp) / 10) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pa + (6 * dp) / 10).toPrecision(5),
-      y: (
-        (dE * (2 * (strike * (Pa + (6 * dp) / 10) * r) ** 0.5 - strike - Pa - (6 * dp) / 10)) / (r - 1) +
-        feeValueETH +
-        feeValueToken * (Pa + (6 * dp) / 10) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pa + (7 * dp) / 10).toPrecision(5),
-      y: (
-        (dE * (2 * (strike * (Pa + (7 * dp) / 10) * r) ** 0.5 - strike - Pa - (7 * dp) / 10)) / (r - 1) +
-        feeValueETH +
-        feeValueToken * (Pa + (7 * dp) / 10) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pa + (8 * dp) / 10).toPrecision(5),
-      y: (
-        (dE * (2 * (strike * (Pa + (8 * dp) / 10) * r) ** 0.5 - strike - Pa - (8 * dp) / 10)) / (r - 1) +
-        feeValueETH +
-        feeValueToken * (Pa + (8 * dp) / 10) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pa + (9 * dp) / 10).toPrecision(5),
-      y: (
-        (dE * (2 * (strike * (Pa + (9 * dp) / 10) * r) ** 0.5 - strike - Pa - (9 * dp) / 10)) / (r - 1) +
-        feeValueETH +
-        feeValueToken * (Pa + (9 * dp) / 10) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pa + (10 * dp) / 10).toPrecision(5),
-      y: (
-        (dE * (2 * (strike * (Pa + (10 * dp) / 10) * r) ** 0.5 - strike - Pa - (10 * dp) / 10)) / (r - 1) +
-        feeValueETH +
-        feeValueToken * (Pa + (10 * dp) / 10) -
-        baseValue
-      ).toPrecision(5),
-    },
-    {
-      x: (Pb + (1 * (Pmax - Pb)) / 10).toPrecision(5),
-      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (1 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
-    },
-    {
-      x: (Pb + (2 * (Pmax - Pb)) / 10).toPrecision(5),
-      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (2 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
-    },
-    {
-      x: (Pb + (3 * (Pmax - Pb)) / 10).toPrecision(5),
-      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (3 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
-    },
-    {
-      x: (Pb + (4 * (Pmax - Pb)) / 10).toPrecision(5),
-      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (4 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
-    },
-    {
-      x: (Pb + (5 * (Pmax - Pb)) / 10).toPrecision(5),
-      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (5 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
-    },
-    {
-      x: (Pb + (6 * (Pmax - Pb)) / 10).toPrecision(5),
-      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (6 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
-    },
-    {
-      x: (Pb + (7 * (Pmax - Pb)) / 10).toPrecision(5),
-      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (7 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
-    },
-    {
-      x: (Pb + (8 * (Pmax - Pb)) / 10).toPrecision(5),
-      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (8 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
-    },
-    {
-      x: (Pb + (9 * (Pmax - Pb)) / 10).toPrecision(5),
-      y: (dE * strike + feeValueETH + feeValueToken * (Pb + (9 * (Pmax - Pb)) / 10) - baseValue).toPrecision(5),
-    },
-    {
-      x: Pmax.toPrecision(5),
-      y: (dE * strike + feeValueETH + feeValueToken * Pmax - baseValue).toPrecision(5),
-    },
-  ]
+
+  const data = []
+  for (let pt = 0; pt <= 100; pt++) {
+    const xx = ((Pmax - Pmin) * pt) / 100 + Pmin
+    const yy =
+      xx < Pa
+        ? dE * xx + feeValueETH + feeValueToken * xx - baseValue
+        : xx >= Pa && xx < Pb
+        ? (dE * (2 * (strike * xx * r) ** 0.5 - strike - xx)) / (r - 1) + feeValueETH + feeValueToken * xx - baseValue
+        : xx >= Pb
+        ? dE * strike + feeValueETH + feeValueToken * xx - baseValue
+        : 0
+
+    data.push({ x: xx.toPrecision(5), y: yy.toPrecision(5) })
+  }
+
   const dataH = [
     {
       x: Pmin.toPrecision(5),
@@ -1056,7 +858,7 @@ export function PositionPage({
                   <ComposedChart
                     width={375}
                     height={400}
-                    data={data}
+                    data={data0}
                     margin={{
                       top: 50,
                       right: 10,
@@ -1102,7 +904,7 @@ export function PositionPage({
                     <ReferenceLine y={0} stroke="#000" />
                     <Scatter data={dataPc} />
                     <Scatter data={dataPe} />
-                    <Scatter line={{ stroke: '#000', strokeWidth: 1.5 }} data={data} dataKey="x" />
+                    <Scatter line={{ stroke: '#000', strokeWidth: 1.5 }} data={data0} dataKey="x" />
                     <Tooltip
                       labelFormatter={() => ' '}
                       allowEscapeViewBox={{
@@ -1120,7 +922,7 @@ export function PositionPage({
                       y2={dE * Pmin - baseValue}
                       fillOpacity={100}
                       fill={'#fff'}
-                      label={'Profit: ' + profit.toFixed(4) + baseSymbol}
+                      label={'Profit: ' + profit.toPrecision(6) + ' ' + baseSymbol}
                     />
                     <XAxis
                       dataKey="x"
@@ -1258,7 +1060,11 @@ export function PositionPage({
                 <AutoColumn gap="md" style={{ width: '100%' }}>
                   <AutoColumn gap="md">
                     <Label>
-                      <Trans>Unclaimed fees</Trans>
+                      <Trans>
+                        Unclaimed fees:
+                        <br />
+                        {feeVal0.toPrecision(4)},{feeVal1.toPrecision(4)}
+                      </Trans>
                     </Label>
                     {fiatValueOfFees?.greaterThan(new Fraction(1, 100)) ? (
                       <TYPE.largeHeader color={theme.green1} fontSize="24px" fontWeight={500}>

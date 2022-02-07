@@ -1,18 +1,18 @@
 import { BigNumber } from '@ethersproject/bignumber'
 import { skipToken } from '@reduxjs/toolkit/query/react'
 import { useMemo } from 'react'
-import { useGQLPositionQuery } from 'state/data/enhanced'
-import { GQLPositionQuery } from 'state/data/generated'
+import { useGQLPositionsQuery } from 'state/data/enhanced'
+import { GQLPositionsQuery } from 'state/data/generated'
 import { Result, useSingleCallResult, useSingleContractMultipleData } from 'state/multicall/hooks'
 import { PositionDetails } from 'types/position'
 
 import { useV3NFTPositionManagerContract } from './useContract'
 
 // Fetches all positions for a given owner
-export function useGQLPosition(id: number | undefined) {
-  const { isLoading, isError, error, isUninitialized, data } = useGQLPositionQuery(id ? { id } : skipToken)
+export function useGQLPositions(owner: string | undefined) {
+  const { isLoading, isError, error, isUninitialized, data } = useGQLPositionsQuery(owner ? { owner } : skipToken)
   return {
-    positions: data?.positions as GQLPositionQuery['positions'],
+    positions: data?.positions as GQLPositionsQuery['positions'],
   }
 }
 

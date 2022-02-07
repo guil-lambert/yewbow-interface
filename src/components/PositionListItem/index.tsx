@@ -145,7 +145,7 @@ const PrimaryPositionIdData = styled.div`
   display: grid;
   grid-gap: 3em;
   align-items: center;
-  grid-template-columns: 0.5fr 1fr 0.5fr 300px 2.5fr 2fr 2fr 3.5fr 2fr;
+  grid-template-columns: 0.5fr 1fr 0.5fr 300px 2.5fr 2fr 2fr 2.5fr 2.5fr;
   > * {
     margin-right: 0px;
   }
@@ -487,7 +487,9 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
             </svg>
           </Label>
           <Label end={1} fontWeight={400}>
-            Uncollected fees:{''}
+            Uncollected fees:
+            <br />
+            {''}
             {''} {fg ? fg.toFixed(3) : '-'}
             {''} ETH (
             <Trans>
@@ -508,12 +510,15 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
               : ((100 * Pupper) / formattedPrice - 100).toFixed(0)}
             %
           </Label>
-          <RangeBadge
-            removed={removed}
-            inRange={delta > 0 && delta < 1}
-            belowRange={delta == 1}
-            aboveRange={delta == 0}
-          />
+          <Label>{''}</Label>
+          <Label>
+            <RangeBadge
+              removed={removed}
+              inRange={delta > 0 && delta < 1}
+              belowRange={delta == 1}
+              aboveRange={delta == 0}
+            />
+          </Label>
         </PrimaryPositionIdData>
       </RowBetween>
       {priceLower && priceUpper ? (
