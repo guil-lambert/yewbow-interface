@@ -673,9 +673,10 @@ export function PositionPage({
       !onOptimisticChain
   )
 
+  const nPt = 48
   const dataPayoff: any[] = []
-  for (let pt = 0; pt <= 100; pt++) {
-    const xx = ((Pmax - Pmin) * pt) / 100 + Pmin
+  for (let pt = 0; pt <= nPt; pt++) {
+    const xx = ((Pmax - Pmin) * pt) / nPt + Pmin
     const yy =
       xx < Pa
         ? dE * xx + feeValueETH + feeValueToken * xx - baseValue
@@ -892,7 +893,7 @@ export function PositionPage({
                       x1={Pa}
                       x2={Pb}
                       y1={dE * Pmin - baseValue}
-                      y2={dE * strike * 1.25 + feeValueTotal - baseValue}
+                      y2={dE * strike * 1.125 + feeValueTotal - baseValue}
                       fillOpacity={0.33}
                     />
                     <Area type="basis" dataKey="y" stroke="#000" fill="url(#splitColor)" activeDot={false} />
