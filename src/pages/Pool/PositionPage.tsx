@@ -22,7 +22,7 @@ import useIsTickAtLimit from 'hooks/useIsTickAtLimit'
 import { PoolState, usePool } from 'hooks/usePools'
 import useUSDCPrice from 'hooks/useUSDCPrice'
 import { useV3PositionFees } from 'hooks/useV3PositionFees'
-import { useGQLPositions, useV3PositionFromTokenId } from 'hooks/useV3Positions'
+import { useAllPositions, useV3PositionFromTokenId } from 'hooks/useV3Positions'
 import { useActiveWeb3React } from 'hooks/web3'
 import JSBI from 'jsbi'
 import { useCallback, useMemo, useState } from 'react'
@@ -339,7 +339,7 @@ export function PositionPage({
 
   const owner = useSingleCallResult(!!tokenId ? positionManager : null, 'ownerOf', [tokenId]).result?.[0]
 
-  const positions = useGQLPositions(owner ? owner.toString() : 1)
+  const positions = useAllPositions(owner ? owner.toString() : 1)
 
   const removed = liquidity?.eq(0)
 

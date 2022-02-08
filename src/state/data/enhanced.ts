@@ -10,7 +10,7 @@ export const api = generatedApi.enhanceEndpoints({
     allV3Ticks: {
       providesTags: [CHAIN_TAG],
     },
-    GQLPositions: {
+    allPositions: {
       providesTags: [CHAIN_TAG],
     },
     feeTierDistribution: {
@@ -19,4 +19,4 @@ export const api = generatedApi.enhanceEndpoints({
   },
 })
 
-export const { useAllV3TicksQuery, useGQLPositionsQuery, useFeeTierDistributionQuery } = api
+export const { useAllV3TicksQuery, useAllPositionsQuery, useFeeTierDistributionQuery } = api

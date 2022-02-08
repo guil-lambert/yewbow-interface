@@ -37,10 +37,10 @@ export const api = createApi({
         },
       }),
     }),
-    GQLPositions: builder.query({
+    allPositions: builder.query({
       query: ({ owner }) => ({
         document: gql`
-          query GQLPositions($owner: String!) {
+          query allPositions($owner: Bytes!) {
             positions(first: 1000, where: { owner: $owner }) {
               id
               liquidity
