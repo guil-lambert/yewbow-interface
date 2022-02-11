@@ -10,7 +10,9 @@ import PositionList from 'components/PositionList'
 import { RowBetween, RowFixed } from 'components/Row'
 import { SwitchLocaleLink } from 'components/SwitchLocaleLink'
 import { L2_CHAIN_IDS } from 'constants/chains'
-import { useV3Positions } from 'hooks/useV3Positions'
+import { WETH9_EXTENDED } from 'constants/tokens'
+import useUSDCPrice from 'hooks/useUSDCPrice'
+import { useAllPositions, useV3Positions } from 'hooks/useV3Positions'
 import { useActiveWeb3React } from 'hooks/web3'
 import { useContext } from 'react'
 import { BookOpen, ChevronDown, ChevronsRight, Inbox, Layers, PlusCircle } from 'react-feather'
@@ -131,12 +133,14 @@ const ResponsiveRow = styled(RowFixed)`
 
 export default function Pool() {
   const { account, chainId } = useActiveWeb3React()
+  const ETHprice = useUSDCPrice(WETH9_EXTENDED[1] ?? undefined)
   const toggleWalletModal = useWalletModalToggle()
 
   const theme = useContext(ThemeContext)
   const [userHideClosedPositions, setUserHideClosedPositions] = useUserHideClosedPositions()
 
   const { positions, loading: positionsLoading } = useV3Positions(account)
+  const positionsGQL = useAllPositions(account?.toString())
 
   const [openPositions, closedPositions] = positions?.reduce<[PositionDetails[], PositionDetails[]]>(
     (acc, p) => {
@@ -145,6 +149,33 @@ export default function Pool() {
     },
     [[], []]
   ) ?? [[], []]
+
+  const openPositionsGQL = positionsGQL.positions
+    ? positionsGQL.positions.filter((obj) => parseFloat(obj.liquidity) > 0)
+    : 0
+  const valueToken0 = openPositionsGQL
+    ? openPositionsGQL.map((obj) =>
+        parseInt(obj.pool.tick) < parseInt(obj.tickUpper.tickIdx)
+          ? obj.liquidity *
+            (1.0001 ** (-Math.max(parseInt(obj.pool.tick), parseInt(obj.tickLower.tickIdx)) / 2) -
+              1.0001 ** (-parseInt(obj.tickUpper.tickIdx) / 2)) *
+            obj.token0.derivedETH
+          : 0
+      )
+    : [1]
+  const valueToken1 = openPositionsGQL
+    ? openPositionsGQL.map((obj) =>
+        parseInt(obj.pool.tick) > parseInt(obj.tickLower.tickIdx)
+          ? obj.liquidity *
+            (1.0001 ** (Math.min(parseInt(obj.pool.tick), parseInt(obj.tickUpper.tickIdx)) / 2) -
+              1.0001 ** (parseInt(obj.tickLower.tickIdx) / 2)) *
+            obj.token1.derivedETH
+          : 0
+      )
+    : [1]
+  const valueInETH = valueToken0.map(function (num, idx) {
+    return (num + valueToken1[idx]) / 10 ** 18
+  })
 
   //const filteredPositions = [...openPositions, ...(userHideClosedPositions ? [] : closedPositions)]
   const filteredPositions = [...openPositions, ...(userHideClosedPositions ? [] : openPositions)]
@@ -229,6 +260,17 @@ export default function Pool() {
               <NetworkAlert thin />
               <DowntimeWarning />
             </HideSmall>
+            <DarkCard>
+              <TYPE.body fontSize={'16px'}>
+                <b> ETH Price: </b>
+                {ETHprice?.toFixed(2) ?? '-'}
+                {'. '}
+                <b>Net Value : </b>
+                {valueInETH.reduce((a, b) => a + b, 0).toPrecision(3)} ETH |{' '}
+                {ETHprice ? (parseFloat(ETHprice.toFixed(2)) * valueInETH.reduce((a, b) => a + b, 0)).toFixed(2) : '-'}{' '}
+                USD
+              </TYPE.body>
+            </DarkCard>
             <MainContentWrapper>
               {positionsLoading ? (
                 <LoadingRows>

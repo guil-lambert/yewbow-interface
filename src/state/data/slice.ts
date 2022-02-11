@@ -46,21 +46,34 @@ export const api = createApi({
               liquidity
               depositedToken0
               depositedToken1
+              withdrawnToken0
+              withdrawnToken1
               collectedFeesToken0
               collectedFeesToken1
               feeGrowthInside0LastX128
               feeGrowthInside1LastX128
               tickLower {
+                tickIdx
                 feeGrowthOutside0X128
                 feeGrowthOutside1X128
               }
               tickUpper {
+                tickIdx
                 feeGrowthOutside0X128
                 feeGrowthOutside1X128
               }
               pool {
                 feeGrowthGlobal0X128
                 feeGrowthGlobal1X128
+                tick
+              }
+              token0 {
+                derivedETH
+                decimals
+              }
+              token1 {
+                derivedETH
+                decimals
               }
             }
           }
