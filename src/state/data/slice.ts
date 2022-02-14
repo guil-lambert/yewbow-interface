@@ -66,6 +66,11 @@ export const api = createApi({
                 feeGrowthGlobal0X128
                 feeGrowthGlobal1X128
                 tick
+                liquidity
+                feeTier
+                poolDayData(first: 1, skip: 1, orderBy: date, orderDirection: desc) {
+                  volumeUSD
+                }
               }
               token0 {
                 derivedETH

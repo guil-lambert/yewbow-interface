@@ -480,6 +480,7 @@ export function PositionPage({
         console.error(error)
       })
   }, [chainId, feeValue0, feeValue1, positionManager, account, tokenId, addTransaction, library])
+  const ETHprice = useUSDCPrice(WETH9_EXTENDED[1] ?? undefined)
 
   //const owner = useSingleCallResult(!!tokenId ? positionManager : null, 'ownerOf', [tokenId]).result?.[0]
   const ownsNFT = owner === account || positionDetails?.operator === account
@@ -673,6 +674,23 @@ export function PositionPage({
       !onOptimisticChain
   )
 
+  const tickX = currentPosition
+    ? (currentPosition[0].pool.liquidity *
+        (1.0001 ** (-currentPosition[0].pool.tick / 2 + currentPosition[0].pool.feeTier / 200) -
+          1.0001 ** (-currentPosition[0].pool.tick / 2 - currentPosition[0].pool.feeTier / 200))) /
+      10 ** 18
+    : 0
+  const tickY = currentPosition
+    ? (currentPosition[0].pool.liquidity *
+        (1.0001 ** (currentPosition[0].pool.tick / 2 + currentPosition[0].pool.feeTier / 200) -
+          1.0001 ** (currentPosition[0].pool.tick / 2 - currentPosition[0].pool.feeTier / 200))) /
+      10 ** 18
+    : 0
+  const tickTVL = tickX * parseFloat(ETHprice ? ETHprice.toFixed(2) : '1')
+  const volumeUSD = currentPosition ? currentPosition[0].pool.poolDayData[0].volumeUSD : 1
+  const volatility = currentPosition
+    ? (2 * currentPosition[0].pool.feeTier * ((365 * volumeUSD) / tickTVL) ** 0.5) / 1000000
+    : 0
   const nPt = 48
   const dataPayoff: any[] = []
   for (let pt = 0; pt <= nPt; pt++) {
@@ -1064,7 +1082,7 @@ export function PositionPage({
                       <Trans>
                         Unclaimed fees:
                         <br />
-                        {feeVal0.toPrecision(4)},{feeVal1.toPrecision(4)}
+                        {(volatility * 100).toFixed(0)}%
                       </Trans>
                     </Label>
                     {fiatValueOfFees?.greaterThan(new Fraction(1, 100)) ? (
