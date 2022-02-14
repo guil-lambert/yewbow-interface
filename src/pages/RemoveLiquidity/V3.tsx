@@ -84,9 +84,7 @@ function Remove({ tokenId }: { tokenId: BigNumber }) {
     error,
   } = useDerivedV3BurnInfo(position, receiveWETH)
   const { onPercentSelect } = useBurnV3ActionHandlers()
-
   const removed = position?.liquidity?.eq(0)
-
   // boilerplate for the slider
   const [percentForSlider, onPercentSelectForSlider] = useDebouncedChangeHandler(percent, onPercentSelect)
 
@@ -107,8 +105,6 @@ function Remove({ tokenId }: { tokenId: BigNumber }) {
       !deadline ||
       !account ||
       !chainId ||
-      !feeValue0 ||
-      !feeValue1 ||
       !positionSDK ||
       !liquidityPercentage ||
       !library
@@ -122,8 +118,8 @@ function Remove({ tokenId }: { tokenId: BigNumber }) {
       slippageTolerance: allowedSlippage,
       deadline: deadline.toString(),
       collectOptions: {
-        expectedCurrencyOwed0: feeValue0,
-        expectedCurrencyOwed1: feeValue1,
+        expectedCurrencyOwed0: liquidityValue0,
+        expectedCurrencyOwed1: liquidityValue1,
         recipient: account,
       },
     })
