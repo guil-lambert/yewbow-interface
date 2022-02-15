@@ -1094,7 +1094,6 @@ export function PositionPage({
                       <Trans>
                         Unclaimed fees:
                         <br />
-                        {(volatility * 100).toFixed(0)}%
                       </Trans>
                     </Label>
                     {fiatValueOfFees?.greaterThan(new Fraction(1, 100)) ? (
