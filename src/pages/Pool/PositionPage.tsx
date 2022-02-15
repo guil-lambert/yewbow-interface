@@ -583,35 +583,42 @@ export function PositionPage({
       ? token1Address == WETH9_EXTENDED[chainId]?.address
         ? parseFloat(position?.amount1.toSignificant(4)) + parseFloat(position?.amount0.toSignificant(4)) * Pc
         : parseFloat(position?.amount0.toSignificant(4)) + parseFloat(position?.amount1.toSignificant(4)) * Pc
-      : 0.001
+      : 0
   const feeValueETH =
     feeValue0 && feeValue1 && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
         ? parseFloat(feeValue1.toSignificant(6))
         : parseFloat(feeValue0.toSignificant(6))
-      : 0.001
+      : 0
   const feeValueToken =
     feeValue0 && feeValue1 && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
         ? parseFloat(feeValue0.toSignificant(6))
         : parseFloat(feeValue1.toSignificant(6))
-      : 0.001
+      : 0
   const feeValueTotal =
     feeValue0 && feeValue1 && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
         ? parseFloat(feeValue1.toSignificant(6)) + parseFloat(feeValue0.toSignificant(6)) * Pc
         : parseFloat(feeValue0.toSignificant(6)) + parseFloat(feeValue1.toSignificant(6)) * Pc
-      : 0.001
+      : 0
   const strike = (Pb * Pa) ** 0.5
   const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
   const dp = Pb > Pa ? Pb - Pa : Pa - Pb
-  const startPrice = pool
-    ? depositedToken0 == 0
-      ? Pa
-      : depositedToken1 == 0
-      ? Pb
-      : ((10 ** pool.token0.decimals * depositedToken0) / positionLiquidity + Pa ** 0.5) ** 2
-    : Pa
+  const startPrice =
+    pool && chainId
+      ? depositedToken0 == 0 && token0Address == WETH9_EXTENDED[chainId]?.address
+        ? Pa
+        : depositedToken1 == 0 && token1Address == WETH9_EXTENDED[chainId]?.address
+        ? Pa
+        : depositedToken1 == 0 && token0Address == WETH9_EXTENDED[chainId]?.address
+        ? Pb
+        : depositedToken0 == 0 && token1Address == WETH9_EXTENDED[chainId]?.address
+        ? Pb
+        : token1Address == WETH9_EXTENDED[chainId]?.address
+        ? ((10 ** pool.token1.decimals * depositedToken1) / positionLiquidity + Pa ** 0.5) ** 2
+        : ((10 ** pool.token0.decimals * depositedToken0) / positionLiquidity + Pa ** 0.5) ** 2
+      : Pa
 
   const dtot = position && liquidity ? liquidity : 0
   const dL = position
@@ -622,7 +629,12 @@ export function PositionPage({
       : amtETH / (Pb ** 0.5 - Pa ** 0.5)
     : 0
   const dE = (dL * (Pb ** 0.5 - startPrice ** 0.5)) / (Pb * startPrice) ** 0.5
-  const baseValue = dE * startPrice
+  const baseValue =
+    Pc < Pb && Pc > Pa
+      ? (dE * (2 * (strike * startPrice * r) ** 0.5 - strike - startPrice)) / (r - 1)
+      : Pc < Pa
+      ? dE * startPrice
+      : (dE * (2 * (strike * Pb * r) ** 0.5 - strike - Pb)) / (r - 1)
   //const BE = (feeValueTotal * (1 - r)) / dE + strike * (-2 * r ** 0.5 + 2 * r)
   const BE = (baseValue * (1 - r) - feeValueETH * (1 - r)) / (dE + feeValueToken * (1 - r))
   const Pe = (startPrice - feeValueETH / dE) / (1 + feeValueToken / dE)
@@ -691,7 +703,7 @@ export function PositionPage({
   const volatility = currentPosition
     ? (2 * currentPosition[0].pool.feeTier * ((365 * volumeUSD) / tickTVL) ** 0.5) / 1000000
     : 0
-  const nPt = 48
+  const nPt = 72
   const dataPayoff: any[] = []
   for (let pt = 0; pt <= nPt; pt++) {
     const xx = ((Pmax - Pmin) * pt) / nPt + Pmin
@@ -706,7 +718,9 @@ export function PositionPage({
 
     dataPayoff.push({ x: xx.toPrecision(5), y: yy.toPrecision(5) })
   }
-
+  const breakEven = dataPayoff
+    ? dataPayoff.filter((obj) => obj.y >= 0)[0].x / 2 + dataPayoff.reverse().filter((obj) => obj.y <= 0)[0].x / 2
+    : Pa
   const dataH = [
     {
       x: Pmin.toPrecision(5),
@@ -727,8 +741,7 @@ export function PositionPage({
   ]
   const dataPc = [
     {
-      name: 'Current Price',
-      x: Pc.toPrecision(3),
+      x: Pc.toPrecision(5),
       y:
         Pc < Pb && Pc > Pa
           ? (
@@ -740,15 +753,14 @@ export function PositionPage({
           : Pc < Pa
           ? (dE * Pc + feeValueETH + feeValueToken * Pc - baseValue).toPrecision(3)
           : (dE * strike + feeValueETH + feeValueToken * Pc - baseValue).toPrecision(3),
-      z: 20,
+      z: 7.5,
     },
   ]
   const dataPe = [
     {
-      name: 'Break even',
-      x: Pe.toPrecision(5),
+      x: breakEven.toPrecision(5),
       y: 0,
-      z: 20,
+      z: 7.5,
     },
   ]
   const dataPerf = [
