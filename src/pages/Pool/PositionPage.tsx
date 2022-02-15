@@ -953,7 +953,7 @@ export function PositionPage({
                       y2={dE * Pmin - baseValue}
                       fillOpacity={100}
                       fill={'#fff'}
-                      label={'Profit: ' + profit.toPrecision(6) + ' ' + baseSymbol}
+                      label={'Profit: ' + profit.toPrecision(6) + ' ' + currencyETH?.symbol}
                     />
                     <XAxis
                       dataKey="x"
