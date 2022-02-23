@@ -639,17 +639,17 @@ export function PositionPage({
   const BE = (baseValue * (1 - r) - feeValueETH * (1 - r)) / (dE + feeValueToken * (1 - r))
   const Pe = (startPrice - feeValueETH / dE) / (1 + feeValueToken / dE)
   const Pmin = midpointStart
-    ? Pa * 0.95 - dp
+    ? Pa * 0.9 - dp
     : Pc < Pe
-    ? Pc * 0.95
+    ? Pc * 0.9
     : Pe < Pa - dp
-    ? Pe * 0.95
+    ? Pe * 0.9
     : Pc < Pa - dp
-    ? Pc * 0.95
+    ? Pc * 0.9
     : Pc > Pb + dp
-    ? Pa * 0.95 - (Pc - Pb)
-    : Pa * 0.95 - dp
-  const Pmax = Pc > Pb + dp ? Pc * 1.05 : Pc < Pa - dp ? Pb * 1.05 + (Pa - Pc) : Pb * 1.05 + dp
+    ? Pa * 0.9 - (Pc - Pb)
+    : Pa * 0.9 - dp
+  const Pmax = Pc > Pb + dp ? Pc * 1.1 : Pc < Pa - dp ? Pb * 1.1 + (Pa - Pc) : Pb * 1.1 + dp
   const topFees = dE * strike + feeValueTotal - baseValue
   const profit = removed
     ? collectedFeesToken1 - depositedToken1 + (collectedFeesToken0 - depositedToken1) * Pc
@@ -719,7 +719,7 @@ export function PositionPage({
     dataPayoff.push({ x: xx.toPrecision(5), y: yy.toPrecision(5) })
   }
   const breakEven = dataPayoff
-    ? dataPayoff.filter((obj) => obj.y >= 0)[0].x / 2 + dataPayoff.reverse().filter((obj) => obj.y <= 0)[0].x / 2
+    ? dataPayoff?.filter((obj) => obj.y >= 0)[0].x / 2 + dataPayoff?.reverse().filter((obj) => obj.y <= 0)[0].x / 2
     : Pa
   const dataH = [
     {
