@@ -140,7 +140,7 @@ export default function Pool() {
   const [userHideClosedPositions, setUserHideClosedPositions] = useUserHideClosedPositions()
 
   const { positions, loading: positionsLoading } = useV3Positions(account)
-  const positionsGQL = useAllPositions(account?.toString())
+  const positionsGQL = useAllPositions(account?.toString(), '0x')
 
   const [openPositions, closedPositions] = positions?.reduce<[PositionDetails[], PositionDetails[]]>(
     (acc, p) => {

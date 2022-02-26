@@ -9,8 +9,10 @@ import { PositionDetails } from 'types/position'
 import { useV3NFTPositionManagerContract } from './useContract'
 
 // Fetches all positions for a given owner
-export function useAllPositions(owner: string | undefined) {
-  const { isLoading, isError, error, isUninitialized, data } = useAllPositionsQuery(owner ? { owner } : skipToken)
+export function useAllPositions(owner: string | undefined, poolAddress: string | undefined) {
+  const { isLoading, isError, error, isUninitialized, data } = useAllPositionsQuery(
+    owner ? (poolAddress ? { owner, poolAddress } : { owner, poolAddress: '0x' }) : skipToken
+  )
   return {
     positions: data?.positions as AllPositionsQuery['positions'],
   }

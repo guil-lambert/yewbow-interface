@@ -353,7 +353,7 @@ export function PositionPage({
 
   const owner = useSingleCallResult(!!tokenId ? positionManager : null, 'ownerOf', [tokenId]).result?.[0]
 
-  const positions = useAllPositions(owner ? owner.toString() : 1)
+  const positions = useAllPositions(account ? account : undefined, '0x')
 
   const removed = liquidity?.eq(0)
 

@@ -2,7 +2,7 @@ import { BigNumber } from '@ethersproject/bignumber'
 import { TransactionResponse } from '@ethersproject/providers'
 import { Trans } from '@lingui/macro'
 import { Currency, CurrencyAmount, Percent } from '@uniswap/sdk-core'
-import { FeeAmount, NonfungiblePositionManager } from '@uniswap/v3-sdk'
+import { FeeAmount, NonfungiblePositionManager, Pool } from '@uniswap/v3-sdk'
 import DowntimeWarning from 'components/DowntimeWarning'
 import UnsupportedCurrencyFooter from 'components/swap/UnsupportedCurrencyFooter'
 import { useCallback, useContext, useEffect, useState } from 'react'
@@ -45,7 +45,7 @@ import { useDerivedPositionInfo } from '../../hooks/useDerivedPositionInfo'
 import { useIsSwapUnsupported } from '../../hooks/useIsSwapUnsupported'
 import useTransactionDeadline from '../../hooks/useTransactionDeadline'
 import { useUSDCValue } from '../../hooks/useUSDCPrice'
-import { useV3PositionFromTokenId } from '../../hooks/useV3Positions'
+import { useAllPositions, useV3PositionFromTokenId } from '../../hooks/useV3Positions'
 import { useActiveWeb3React } from '../../hooks/web3'
 import { useWalletModalToggle } from '../../state/application/hooks'
 import { Bound, Field } from '../../state/mint/v3/actions'
@@ -88,7 +88,6 @@ export default function AddLiquidity({
   const expertMode = useIsExpertMode()
   const addTransaction = useTransactionAdder()
   const positionManager = useV3NFTPositionManagerContract()
-
   // check for existing position if tokenId in url
   const { position: existingPositionDetails, loading: positionLoading } = useV3PositionFromTokenId(
     tokenId ? BigNumber.from(tokenId) : undefined
@@ -137,7 +136,11 @@ export default function AddLiquidity({
     baseCurrency ?? undefined,
     existingPosition
   )
-
+  const poolAddress =
+    baseCurrency && quoteCurrency && feeAmount
+      ? Pool.getAddress(baseCurrency?.wrapped, quoteCurrency?.wrapped, feeAmount)
+      : ' '
+  const positions = useAllPositions(account ? account : undefined, poolAddress.toLowerCase())
   const { onFieldAInput, onFieldBInput, onLeftRangeInput, onRightRangeInput, onStartPriceInput } =
     useV3MintActionHandlers(noLiquidity)
 
@@ -733,6 +736,14 @@ export default function AddLiquidity({
                           <RowBetween>
                             <TYPE.label>
                               <Trans>Set Price Range</Trans>
+                            </TYPE.label>
+                          </RowBetween>
+                          <RowBetween>
+                            <TYPE.label>
+                              <Trans>
+                                Existing Position:
+                                {positions.positions ? positions.positions.map((x) => x.id + ',') : '0x'}
+                              </Trans>
                             </TYPE.label>
                           </RowBetween>
 
