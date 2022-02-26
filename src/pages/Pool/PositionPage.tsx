@@ -156,6 +156,8 @@ function CurrentPriceCard({
   owner,
   poolAddress,
   chainId,
+  amountDepositedUSD,
+  amountCollectedUSD,
 }: {
   inverted?: boolean
   pool?: Pool | null
@@ -166,6 +168,8 @@ function CurrentPriceCard({
   owner?: null
   poolAddress?: string
   chainId?: number
+  amountDepositedUSD?: string
+  amountCollectedUSD?: string
 }) {
   if (!pool || !currencyQuote || !currencyBase || !r || !owner || !poolAddress || !chainId || !strike) {
     return null
@@ -229,6 +233,16 @@ function CurrentPriceCard({
             <ExtentsText>
               <TYPE.small textAlign="center">
                 <b>Capital Efficiency:</b> {(r ** 0.5 / (r ** 0.5 - 1)).toFixed(0)}X vs V2
+              </TYPE.small>
+            </ExtentsText>
+            <ExtentsText>
+              <TYPE.small textAlign="center">
+                <b>Value deposited:</b> {amountDepositedUSD ? parseFloat(amountDepositedUSD).toFixed(2) : '-'}USD
+              </TYPE.small>
+            </ExtentsText>
+            <ExtentsText>
+              <TYPE.small textAlign="center">
+                <b>Value collected:</b> {amountCollectedUSD ? parseFloat(amountCollectedUSD).toFixed(2) : '-'}USD
               </TYPE.small>
             </ExtentsText>
           </AutoColumn>
@@ -490,24 +504,26 @@ export function PositionPage({
   const p0 = tokenId && positions.positions ? positions.positions.filter((obj) => obj.id == tokenId.toString()) : 0
   const currentPosition =
     tokenId && positions.positions ? positions.positions.filter((obj) => obj.id == tokenId.toString()) : 0
-  //const positionId2 = positions.positions ? positions.positions.findIndex((id) => parseInt(id) === 172886) : -1
-  const depositedToken0 = currentPosition ? currentPosition[0].depositedToken0 : 1
-  const depositedToken1 = currentPosition ? currentPosition[0].depositedToken1 : 1
-  const collectedFeesToken0 = currentPosition ? currentPosition[0].collectedFeesToken0 : 1
-  const collectedFeesToken1 = currentPosition ? currentPosition[0].collectedFeesToken1 : 1
-  const positionLiquidity = currentPosition ? currentPosition[0].liquidity : 1
-  const feeGrowthInside0LastX128 = currentPosition ? currentPosition[0].feeGrowthInside0LastX128 : 1
-  const feeGrowthInside1LastX128 = currentPosition ? currentPosition[0].feeGrowthInside1LastX128 : 1
+  const depositedToken0 = currentPosition != 0 ? currentPosition[0].depositedToken0 : 1
+  const depositedToken1 = currentPosition != 0 ? currentPosition[0].depositedToken1 : 1
+  const collectedFeesToken0 = currentPosition != 0 ? currentPosition[0].collectedFeesToken0 : 1
+  const collectedFeesToken1 = currentPosition != 0 ? currentPosition[0].collectedFeesToken1 : 1
+  const positionLiquidity = currentPosition != 0 ? currentPosition[0].liquidity : 1
+  const feeGrowthInside0LastX128 = currentPosition != 0 ? currentPosition[0].feeGrowthInside0LastX128 : 1
+  const feeGrowthInside1LastX128 = currentPosition != 0 ? currentPosition[0].feeGrowthInside1LastX128 : 1
   const b256 = BigNumber.from('115792089237316195423570985008687907853269984665640564039457584007913129639936')
   const b128 = BigNumber.from('340282366920938463463374607431768211456')
   const feeGrowthLast0 = b256.sub(BigNumber.from(feeGrowthInside0LastX128))
   const feeGrowthLast1 = b256.sub(BigNumber.from(feeGrowthInside1LastX128))
-  const feeGrowthGlobal0X128 = currentPosition ? currentPosition[0].pool.feeGrowthGlobal0X128 : 1
-  const feeGrowthGlobal1X128 = currentPosition ? currentPosition[0].pool.feeGrowthGlobal1X128 : 1
-  const feeLowerOutside0X128 = currentPosition ? currentPosition[0].tickLower.feeGrowthOutside0X128 : 1
-  const feeLowerOutside1X128 = currentPosition ? currentPosition[0].tickLower.feeGrowthOutside1X128 : 1
-  const feeUpperOutside0X128 = currentPosition ? currentPosition[0].tickUpper.feeGrowthOutside0X128 : 1
-  const feeUpperOutside1X128 = currentPosition ? currentPosition[0].tickUpper.feeGrowthOutside1X128 : 1
+  const feeGrowthGlobal0X128 = currentPosition != 0 ? currentPosition[0].pool.feeGrowthGlobal0X128 : 1
+  const feeGrowthGlobal1X128 = currentPosition != 0 ? currentPosition[0].pool.feeGrowthGlobal1X128 : 1
+  const feeLowerOutside0X128 = currentPosition != 0 ? currentPosition[0].tickLower.feeGrowthOutside0X128 : 1
+  const feeLowerOutside1X128 = currentPosition != 0 ? currentPosition[0].tickLower.feeGrowthOutside1X128 : 1
+  const feeUpperOutside0X128 = currentPosition != 0 ? currentPosition[0].tickUpper.feeGrowthOutside0X128 : 1
+  const feeUpperOutside1X128 = currentPosition != 0 ? currentPosition[0].tickUpper.feeGrowthOutside1X128 : 1
+  const amountDepositedUSD = currentPosition != 0 ? currentPosition[0].amountDepositedUSD : 1
+  const amountWithdrawnUSD = currentPosition != 0 ? currentPosition[0].amountWithdrawnUSD : 1
+  const amountCollectedUSD = currentPosition != 0 ? currentPosition[0].amountCollectedUSD : 1
   //const dep0 = positions.positions.find((id) => id == parseInt(tokenId)).depositedToken0
   const dec0 = pool ? pool.token0.decimals : 18
   const dec1 = pool ? pool.token1.decimals : 18
@@ -616,8 +632,12 @@ export function PositionPage({
         : depositedToken0 == 0 && token1Address == WETH9_EXTENDED[chainId]?.address
         ? Pb
         : token1Address == WETH9_EXTENDED[chainId]?.address
-        ? ((10 ** pool.token1.decimals * depositedToken1) / positionLiquidity + Pa ** 0.5) ** 2
-        : ((10 ** pool.token0.decimals * depositedToken0) / positionLiquidity + Pa ** 0.5) ** 2
+        ? ((10 ** (2 * pool.token0.decimals - pool.token1.decimals) * depositedToken1) / positionLiquidity +
+            Pa ** 0.5) **
+          2
+        : ((10 ** (2 * pool.token1.decimals - pool.token0.decimals) * depositedToken0) / positionLiquidity +
+            Pa ** 0.5) **
+          2
       : Pa
 
   const dtot = position && liquidity ? liquidity : 0
@@ -652,7 +672,7 @@ export function PositionPage({
   const Pmax = Pc > Pb + dp ? Pc * 1.1 : Pc < Pa - dp ? Pb * 1.1 + (Pa - Pc) : Pb * 1.1 + dp
   const topFees = dE * strike + feeValueTotal - baseValue
   const profit = removed
-    ? collectedFeesToken1 - depositedToken1 + (collectedFeesToken0 - depositedToken1) * Pc
+    ? amountCollectedUSD - amountDepositedUSD
     : Pc < Pb && Pc > Pa
     ? (dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) + feeValueETH + feeValueToken * Pc - baseValue
     : Pc < Pa
@@ -686,23 +706,24 @@ export function PositionPage({
       !onOptimisticChain
   )
 
-  const tickX = currentPosition
-    ? (currentPosition[0].pool.liquidity *
-        (1.0001 ** (-currentPosition[0].pool.tick / 2 + currentPosition[0].pool.feeTier / 200) -
-          1.0001 ** (-currentPosition[0].pool.tick / 2 - currentPosition[0].pool.feeTier / 200))) /
-      10 ** 18
-    : 0
-  const tickY = currentPosition
-    ? (currentPosition[0].pool.liquidity *
-        (1.0001 ** (currentPosition[0].pool.tick / 2 + currentPosition[0].pool.feeTier / 200) -
-          1.0001 ** (currentPosition[0].pool.tick / 2 - currentPosition[0].pool.feeTier / 200))) /
-      10 ** 18
-    : 0
+  const tickX =
+    currentPosition != 0
+      ? (currentPosition[0].pool.liquidity *
+          (1.0001 ** (-currentPosition[0].pool.tick / 2 + currentPosition[0].pool.feeTier / 200) -
+            1.0001 ** (-currentPosition[0].pool.tick / 2 - currentPosition[0].pool.feeTier / 200))) /
+        10 ** 18
+      : 0
+  const tickY =
+    currentPosition != 0
+      ? (currentPosition[0].pool.liquidity *
+          (1.0001 ** (currentPosition[0].pool.tick / 2 + currentPosition[0].pool.feeTier / 200) -
+            1.0001 ** (currentPosition[0].pool.tick / 2 - currentPosition[0].pool.feeTier / 200))) /
+        10 ** 18
+      : 0
   const tickTVL = tickX * parseFloat(ETHprice ? ETHprice.toFixed(2) : '1')
-  const volumeUSD = currentPosition ? currentPosition[0].pool.poolDayData[0].volumeUSD : 1
-  const volatility = currentPosition
-    ? (2 * currentPosition[0].pool.feeTier * ((365 * volumeUSD) / tickTVL) ** 0.5) / 1000000
-    : 0
+  const volumeUSD = currentPosition != 0 ? currentPosition[0].pool.poolDayData[0].volumeUSD : 1
+  const volatility =
+    currentPosition != 0 ? (2 * currentPosition[0].pool.feeTier * ((365 * volumeUSD) / tickTVL) ** 0.5) / 1000000 : 0
   const nPt = 72
   const dataPayoff: any[] = []
   for (let pt = 0; pt <= nPt; pt++) {
@@ -718,9 +739,12 @@ export function PositionPage({
 
     dataPayoff.push({ x: xx.toPrecision(5), y: yy.toPrecision(5) })
   }
-  const breakEven = dataPayoff
-    ? dataPayoff?.filter((obj) => obj.y >= 0)[0].x / 2 + dataPayoff?.reverse().filter((obj) => obj.y <= 0)[0].x / 2
-    : Pa
+  const breakEven =
+    dataPayoff &&
+    dataPayoff?.filter((obj) => obj.y >= 0)[0] != undefined &&
+    dataPayoff?.reverse().filter((obj) => obj.y <= 0)[0] != undefined
+      ? dataPayoff?.filter((obj) => obj.y >= 0)[0].x / 2 + dataPayoff?.reverse().filter((obj) => obj.y <= 0)[0].x / 2
+      : Pa
   const dataH = [
     {
       x: Pmin.toPrecision(5),
@@ -953,7 +977,7 @@ export function PositionPage({
                       y2={dE * Pmin - baseValue}
                       fillOpacity={100}
                       fill={'#fff'}
-                      label={'Profit: ' + profit.toPrecision(6) + ' ' + currencyETH?.symbol}
+                      label={removed ? 'Profit: ' + profit.toPrecision(6) + ' USD' : profit.toPrecision(6)}
                     />
                     <XAxis
                       dataKey="x"
@@ -1280,6 +1304,8 @@ export function PositionPage({
                 owner={owner}
                 poolAddress={poolAddress}
                 chainId={chainId}
+                amountDepositedUSD={amountDepositedUSD}
+                amountCollectedUSD={amountCollectedUSD}
               />
             </AutoColumn>
           </DarkCard>
