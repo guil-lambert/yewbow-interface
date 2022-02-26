@@ -44,6 +44,9 @@ export const api = createApi({
             positions(first: 1000, where: { owner: $owner }) {
               id
               liquidity
+              amountDepositedUSD
+              amountWithdrawnUSD
+              amountCollectedUSD
               depositedToken0
               depositedToken1
               withdrawnToken0
