@@ -8,7 +8,7 @@ import UnsupportedCurrencyFooter from 'components/swap/UnsupportedCurrencyFooter
 import { useCallback, useContext, useEffect, useState } from 'react'
 import { AlertTriangle } from 'react-feather'
 import ReactGA from 'react-ga'
-import { RouteComponentProps } from 'react-router-dom'
+import { Link, RouteComponentProps } from 'react-router-dom'
 import { Text } from 'rebass'
 import {
   useRangeHopCallbacks,
@@ -362,6 +362,16 @@ export default function AddLiquidity({
       return
     }
   }
+
+  const setPriceRance = useCallback(
+    (tickLower: number, tickUpper: number, invertPrice: boolean) => {
+      const priceLower = invertPrice ? (1.0001 ** -tickLower).toString() : (1.0001 ** tickLower).toString()
+      const priceUpper = invertPrice ? (1.0001 ** -tickUpper).toString() : (1.0001 ** tickUpper).toString()
+      onLeftRangeInput(priceLower)
+      onRightRangeInput(priceUpper)
+    },
+    [onLeftRangeInput, onRightRangeInput]
+  )
 
   const handleCurrencySelect = useCallback(
     (currencyNew: Currency, currencyIdOther?: string): (string | undefined)[] => {
@@ -738,14 +748,6 @@ export default function AddLiquidity({
                               <Trans>Set Price Range</Trans>
                             </TYPE.label>
                           </RowBetween>
-                          <RowBetween>
-                            <TYPE.label>
-                              <Trans>
-                                Existing Position:
-                                {positions.positions ? positions.positions.map((x) => x.id + ',') : '0x'}
-                              </Trans>
-                            </TYPE.label>
-                          </RowBetween>
 
                           {price && baseCurrency && quoteCurrency && !noLiquidity && (
                             <AutoRow gap="4px" justify="center" style={{ marginTop: '0.5rem' }}>
@@ -980,6 +982,54 @@ export default function AddLiquidity({
               )}
             </ResponsiveTwoColumns>
           </Wrapper>
+        </PageWrapper>
+        <PageWrapper wide={true}>
+          <RowBetween>
+            <TYPE.label>
+              <Trans>Existing Position:</Trans>
+            </TYPE.label>
+          </RowBetween>
+          {positions.positions
+            ? positions.positions.map((p) => {
+                return (
+                  <RowBetween key={p.id}>
+                    <MediumOnly>
+                      {baseCurrency && quoteCurrency && feeAmount ? (
+                        <ButtonText
+                          onClick={() => setPriceRance(p.tickLower.tickIdx, p.tickUpper.tickIdx, invertPrice)}
+                        >
+                          <Trans>
+                            {p.id} already exists! Set strike and range factor: {'('}
+                            {invertPrice
+                              ? (1.0001 ** -p.tickLower.tickIdx).toPrecision(5)
+                              : (1.0001 ** p.tickLower.tickIdx).toPrecision(5)}
+                            {', '}
+                            {invertPrice
+                              ? (1.0001 ** -p.tickUpper.tickIdx).toPrecision(5)
+                              : (1.0001 ** p.tickUpper.tickIdx).toPrecision(5)}
+                            {')'}
+                          </Trans>
+                        </ButtonText>
+                      ) : null}
+                    </MediumOnly>
+                    <MediumOnly>
+                      ---------------------------------------------------------------------------------------------
+                      {'>'}
+                    </MediumOnly>
+                    <MediumOnly>
+                      {baseCurrency && quoteCurrency && feeAmount ? (
+                        <ButtonText
+                          as={Link}
+                          to={`/increase/${currencyId(baseCurrency)}/${currencyId(quoteCurrency)}/${feeAmount}/${p.id}`}
+                        >
+                          <Trans>Add Liquidity to {p.id}</Trans>
+                        </ButtonText>
+                      ) : null}
+                    </MediumOnly>
+                  </RowBetween>
+                )
+              })
+            : '0x'}
         </PageWrapper>
         {addIsUnsupported && (
           <UnsupportedCurrencyFooter

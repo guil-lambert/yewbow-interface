@@ -211,6 +211,7 @@ export const ButtonEmpty = styled(BaseButton)`
 export const ButtonText = styled(BaseButton)`
   padding: 0;
   width: fit-content;
+  color: ${({ theme }) => theme.blue1};
   background: none;
   text-decoration: none;
   &:focus {
@@ -218,7 +219,7 @@ export const ButtonText = styled(BaseButton)`
     text-decoration: underline;
   }
   &:hover {
-    // text-decoration: underline;
+    text-decoration: underline;
     opacity: 0.9;
   }
   &:active {
