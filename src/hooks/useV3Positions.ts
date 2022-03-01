@@ -13,8 +13,9 @@ export function useAllPositions(owner: string | undefined, poolAddress: string |
   const { isLoading, isError, error, isUninitialized, data } = useAllPositionsQuery(
     owner ? (poolAddress ? { owner, poolAddress } : { owner, poolAddress: '0x' }) : skipToken
   )
+  const positionsData = data?.positions as AllPositionsQuery['positions']
   return {
-    positions: data?.positions as AllPositionsQuery['positions'],
+    positions: positionsData,
   }
 }
 

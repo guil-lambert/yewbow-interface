@@ -621,7 +621,7 @@ export function PositionPage({
   const strike = (Pb * Pa) ** 0.5
   const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
   const dp = Pb > Pa ? Pb - Pa : Pa - Pb
-  const startPrice =
+  const startPriceInit =
     pool && chainId
       ? depositedToken0 == 0 && token0Address == WETH9_EXTENDED[chainId]?.address
         ? Pa
@@ -639,7 +639,7 @@ export function PositionPage({
             Pa ** 0.5) **
           2
       : Pa
-
+  const startPrice = startPriceInit > 10 ** 24 ? Pa : startPriceInit
   const dtot = position && liquidity ? liquidity : 0
   const dL = position
     ? Pc > Pa && Pc < Pb
@@ -650,9 +650,9 @@ export function PositionPage({
     : 0
   const dE = (dL * (Pb ** 0.5 - startPrice ** 0.5)) / (Pb * startPrice) ** 0.5
   const baseValue =
-    Pc < Pb && Pc > Pa
+    startPrice < Pb && startPrice > Pa
       ? (dE * (2 * (strike * startPrice * r) ** 0.5 - strike - startPrice)) / (r - 1)
-      : Pc < Pa
+      : startPrice <= Pa
       ? dE * startPrice
       : (dE * (2 * (strike * Pb * r) ** 0.5 - strike - Pb)) / (r - 1)
   //const BE = (feeValueTotal * (1 - r)) / dE + strike * (-2 * r ** 0.5 + 2 * r)
@@ -726,6 +726,8 @@ export function PositionPage({
     currentPosition != 0 ? (2 * currentPosition[0].pool.feeTier * ((365 * volumeUSD) / tickTVL) ** 0.5) / 1000000 : 0
   const nPt = 72
   const dataPayoff: any[] = []
+  const dataPayoffX: any[] = []
+  const dataPayoffY: any[] = []
   for (let pt = 0; pt <= nPt; pt++) {
     const xx = ((Pmax - Pmin) * pt) / nPt + Pmin
     const yy =
@@ -736,15 +738,13 @@ export function PositionPage({
         : xx >= Pb
         ? dE * strike + feeValueETH + feeValueToken * xx - baseValue
         : 0
-
     dataPayoff.push({ x: xx.toPrecision(5), y: yy.toPrecision(5) })
+    dataPayoffX.push(xx.toPrecision(5))
+    dataPayoffY.push(yy.toPrecision(5))
   }
   const breakEven =
-    dataPayoff &&
-    dataPayoff?.filter((obj) => obj.y >= 0)[0] != undefined &&
-    dataPayoff?.reverse().filter((obj) => obj.y <= 0)[0] != undefined
-      ? dataPayoff?.filter((obj) => obj.y >= 0)[0].x / 2 + dataPayoff?.reverse().filter((obj) => obj.y <= 0)[0].x / 2
-      : Pa
+    dataPayoffX[dataPayoffY.findIndex((obj) => obj > 0)] / 2 +
+    dataPayoffX.reverse()[dataPayoffY.reverse().findIndex((obj) => obj < 0)] / 2
   const dataH = [
     {
       x: Pmin.toPrecision(5),
@@ -782,7 +782,7 @@ export function PositionPage({
   ]
   const dataPe = [
     {
-      x: breakEven.toPrecision(5),
+      x: breakEven,
       y: 0,
       z: 7.5,
     },
