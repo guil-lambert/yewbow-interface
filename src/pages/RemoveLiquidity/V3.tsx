@@ -7,6 +7,7 @@ import RangeBadge from 'components/Badge/RangeBadge'
 import { ButtonConfirmed, ButtonPrimary } from 'components/Button'
 import { LightCard } from 'components/Card'
 import { AutoColumn } from 'components/Column'
+import Confetti from 'components/Confetti'
 import CurrencyLogo from 'components/CurrencyLogo'
 import DoubleCurrencyLogo from 'components/DoubleLogo'
 import { Break } from 'components/earn/styled'
@@ -81,13 +82,20 @@ function Remove({ tokenId }: { tokenId: BigNumber }) {
     feeValue0,
     feeValue1,
     outOfRange,
+    aboveRange,
+    belowRange,
     error,
   } = useDerivedV3BurnInfo(position, receiveWETH)
   const { onPercentSelect } = useBurnV3ActionHandlers()
   const removed = position?.liquidity?.eq(0)
   // boilerplate for the slider
   const [percentForSlider, onPercentSelectForSlider] = useDebouncedChangeHandler(percent, onPercentSelect)
-
+  const confetti =
+    liquidityValue0?.currency && liquidityValue1?.currency
+      ? (aboveRange && liquidityValue1.currency.wrapped.equals(WETH9_EXTENDED[liquidityValue0.currency.chainId])) ||
+        (belowRange && liquidityValue0.currency.wrapped.equals(WETH9_EXTENDED[liquidityValue1.currency.chainId])) ||
+        !outOfRange
+      : false
   const deadline = useTransactionDeadline() // custom from users settings
   const allowedSlippage = useUserSlippageToleranceWithDefault(DEFAULT_REMOVE_V3_LIQUIDITY_SLIPPAGE_TOLERANCE) // custom from users
 
@@ -309,6 +317,7 @@ function Remove({ tokenId }: { tokenId: BigNumber }) {
                 </RowFixed>
                 <RangeBadge removed={removed} inRange={!outOfRange} aboveRange={false} belowRange={false} />
               </RowBetween>
+              <Confetti start={confetti && !removed} />
               <LightCard>
                 <AutoColumn gap="md">
                   <TYPE.main fontWeight={400}>

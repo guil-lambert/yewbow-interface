@@ -7,6 +7,7 @@ import Badge from 'components/Badge'
 import { ButtonConfirmed, ButtonGray, ButtonPrimary } from 'components/Button'
 import { DarkCard, LightCard } from 'components/Card'
 import { AutoColumn } from 'components/Column'
+import Confetti from 'components/Confetti'
 import CurrencyLogo from 'components/CurrencyLogo'
 import DoubleCurrencyLogo from 'components/DoubleLogo'
 import Loader from 'components/Loader'
@@ -33,6 +34,7 @@ import {
   AreaChart,
   CartesianGrid,
   ComposedChart,
+  LabelList,
   Line,
   ReferenceArea,
   ReferenceLine,
@@ -352,8 +354,8 @@ export function PositionPage({
   const positionManager = useV3NFTPositionManagerContract()
 
   const owner = useSingleCallResult(!!tokenId ? positionManager : null, 'ownerOf', [tokenId]).result?.[0]
-
-  const positions = useAllPositions(account ? account : undefined, '0x')
+  const ownsIt = account ? (owner === account ? true : false) : false
+  const positions = useAllPositions(ownsIt ? (account ? account : undefined) : owner, '0x')
 
   const removed = liquidity?.eq(0)
 
@@ -765,6 +767,7 @@ export function PositionPage({
   ]
   const dataPc = [
     {
+      label: 'spot',
       x: Pc.toPrecision(5),
       y:
         Pc < Pb && Pc > Pa
@@ -782,6 +785,7 @@ export function PositionPage({
   ]
   const dataPe = [
     {
+      label: 'BE',
       x: breakEven,
       y: 0,
       z: 7.5,
@@ -896,6 +900,7 @@ export function PositionPage({
             </ResponsiveRow>
             <RowBetween></RowBetween>
           </AutoColumn>
+          <Confetti start={Boolean(removed && profit > 0)} />
           <ResponsiveRow align="flex-start">
             {'result' in metadata ? (
               <DarkCard
@@ -946,9 +951,10 @@ export function PositionPage({
                     <ReferenceArea
                       x1={Pa}
                       x2={Pb}
-                      y1={dE * Pmin - baseValue}
-                      y2={dE * strike * 1.125 + feeValueTotal - baseValue}
-                      fillOpacity={0.33}
+                      y1={(dE * Pmin) / 1.125 - baseValue - 0.01}
+                      y2={dE * strike * 1.125 + feeValueTotal - baseValue + 0.01}
+                      fillOpacity={0.2}
+                      fill={inRange ? '#47b247' : '#cc333f'}
                     />
                     <Area type="basis" dataKey="y" stroke="#000" fill="url(#splitColor)" activeDot={false} />
                     <ReferenceLine
@@ -957,8 +963,22 @@ export function PositionPage({
                       strokeDasharray="1 4"
                     />
                     <ReferenceLine y={0} stroke="#000" />
-                    <Scatter data={dataPc} />
-                    <Scatter data={dataPe} />
+                    <Scatter data={dataPc}>
+                      <LabelList
+                        position="insideBottomRight"
+                        offset="10"
+                        dataKey="label"
+                        style={{ fontSize: '12px' }}
+                      />
+                    </Scatter>
+                    <Scatter data={dataPe} shape="cross">
+                      <LabelList
+                        position="insideBottomRight"
+                        offset="10"
+                        dataKey="label"
+                        style={{ fontSize: '12px' }}
+                      />
+                    </Scatter>
                     <Scatter line={{ stroke: '#000', strokeWidth: 1.5 }} data={dataPayoff} dataKey="x" />
                     <Tooltip
                       labelFormatter={() => ' '}
@@ -973,8 +993,8 @@ export function PositionPage({
                     <ReferenceArea
                       x1={Pmin}
                       x2={Pmax}
-                      y1={(dE * Pmin) / 1.125 - baseValue}
-                      y2={dE * Pmin - baseValue}
+                      y1={removed ? -1 : (dE * Pmin) / 1.125 - baseValue}
+                      y2={removed ? 1 : dE * Pmin - baseValue}
                       fillOpacity={100}
                       fill={'#fff'}
                       label={removed ? 'Profit: ' + profit.toPrecision(6) + ' USD' : profit.toPrecision(6)}
@@ -1001,7 +1021,10 @@ export function PositionPage({
                         (dE * strike + feeValueETH + feeValueToken * Pb - baseValue).toPrecision(3),
                       ]}
                       dataKey="y"
-                      domain={[(dE * Pmin) / 1.125 - baseValue, dE * strike * 1.125 + feeValueTotal - baseValue]}
+                      domain={[
+                        removed ? -1 : (dE * Pmin) / 1.125 - baseValue - 0.01,
+                        removed ? 1 : dE * strike * 1.125 + feeValueTotal - baseValue + 0.01,
+                      ]}
                       label={{ value: 'Profit/Loss', angle: -90, position: 'insideLeft', offset: 5 }}
                     />
                     <ZAxis type="number" dataKey="z" range={[1, 100]} />

@@ -28,6 +28,8 @@ export function useDerivedV3BurnInfo(
   feeValue0?: CurrencyAmount<Currency>
   feeValue1?: CurrencyAmount<Currency>
   outOfRange: boolean
+  aboveRange: boolean
+  belowRange: boolean
   error?: ReactNode
 } {
   const { account } = useActiveWeb3React()
@@ -74,6 +76,10 @@ export function useDerivedV3BurnInfo(
   const outOfRange =
     pool && position ? pool.tickCurrent < position.tickLower || pool.tickCurrent > position.tickUpper : false
 
+  const aboveRange = pool && position ? pool.tickCurrent > position.tickUpper : false
+
+  const belowRange = pool && position ? pool.tickCurrent < position.tickLower : false
+
   let error: ReactNode | undefined
   if (!account) {
     error = <Trans>Connect Wallet</Trans>
@@ -89,6 +95,8 @@ export function useDerivedV3BurnInfo(
     feeValue0,
     feeValue1,
     outOfRange,
+    aboveRange,
+    belowRange,
     error,
   }
 }

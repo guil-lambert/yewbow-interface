@@ -633,6 +633,45 @@ export default function AddLiquidity({
               </Row>
             )}
           </AddRemoveTabs>
+          {!hasExistingPosition ? (
+            <PageWrapper wide={true}>
+              <RowBetween>
+                <TYPE.label>
+                  <Trans>Existing Positions:</Trans>
+                </TYPE.label>
+              </RowBetween>
+              {positions.positions
+                ? positions.positions.map((p) => {
+                    return (
+                      <RowBetween key={p.id}>
+                        <ExternalLink href={'http://app.yewbow.org/#/pool/' + p.id}>Position {p.id}</ExternalLink>
+                        <MediumOnly>
+                          {baseCurrency && quoteCurrency && feeAmount ? (
+                            <ButtonText
+                              onClick={() => setPriceRange(p.tickLower.tickIdx, p.tickUpper.tickIdx, invertPrice)}
+                            >
+                              <Trans>Use same range</Trans>
+                            </ButtonText>
+                          ) : null}
+                        </MediumOnly>
+                        <MediumOnly>
+                          {baseCurrency && quoteCurrency && feeAmount ? (
+                            <ButtonText
+                              as={Link}
+                              to={`/increase/${currencyId(baseCurrency)}/${currencyId(quoteCurrency)}/${feeAmount}/${
+                                p.id
+                              }`}
+                            >
+                              <Trans>Add Liquidity to {p.id}</Trans>
+                            </ButtonText>
+                          ) : null}
+                        </MediumOnly>
+                      </RowBetween>
+                    )
+                  })
+                : '0x'}
+            </PageWrapper>
+          ) : null}
           <Wrapper>
             <ResponsiveTwoColumns wide={!hasExistingPosition}>
               <AutoColumn gap="lg">
@@ -983,55 +1022,6 @@ export default function AddLiquidity({
             </ResponsiveTwoColumns>
           </Wrapper>
         </PageWrapper>
-        {!hasExistingPosition ? (
-          <PageWrapper wide={true}>
-            <RowBetween>
-              <TYPE.label>
-                <Trans>Existing Position:</Trans>
-              </TYPE.label>
-            </RowBetween>
-            {positions.positions
-              ? positions.positions.map((p) => {
-                  return (
-                    <RowBetween key={p.id}>
-                      <ExternalLink href={'http://app.yewbow.org/#/pool/' + p.id}>Position {p.id}</ExternalLink>
-                      <MediumOnly>
-                        {baseCurrency && quoteCurrency && feeAmount ? (
-                          <ButtonText
-                            onClick={() => setPriceRange(p.tickLower.tickIdx, p.tickUpper.tickIdx, invertPrice)}
-                          >
-                            <Trans>
-                              Set limits: {'('}
-                              {invertPrice
-                                ? (1.0001 ** -p.tickUpper.tickIdx).toPrecision(5)
-                                : (1.0001 ** p.tickLower.tickIdx).toPrecision(5)}
-                              {', '}
-                              {invertPrice
-                                ? (1.0001 ** -p.tickLower.tickIdx).toPrecision(5)
-                                : (1.0001 ** p.tickUpper.tickIdx).toPrecision(5)}
-                              {')'}
-                            </Trans>
-                          </ButtonText>
-                        ) : null}
-                      </MediumOnly>
-                      <MediumOnly>
-                        {baseCurrency && quoteCurrency && feeAmount ? (
-                          <ButtonText
-                            as={Link}
-                            to={`/increase/${currencyId(baseCurrency)}/${currencyId(quoteCurrency)}/${feeAmount}/${
-                              p.id
-                            }`}
-                          >
-                            <Trans>Add Liquidity to {p.id}</Trans>
-                          </ButtonText>
-                        ) : null}
-                      </MediumOnly>
-                    </RowBetween>
-                  )
-                })
-              : '0x'}
-          </PageWrapper>
-        ) : null}
         {addIsUnsupported && (
           <UnsupportedCurrencyFooter
             show={addIsUnsupported}
