@@ -634,10 +634,10 @@ export function PositionPage({
         : depositedToken0 == 0 && token1Address == WETH9_EXTENDED[chainId]?.address
         ? Pb
         : token1Address == WETH9_EXTENDED[chainId]?.address
-        ? ((10 ** (2 * pool.token0.decimals - pool.token1.decimals) * depositedToken1) / positionLiquidity +
+        ? ((10 ** (pool.token1.decimals / 2 + pool.token0.decimals / 2) * depositedToken1) / positionLiquidity +
             Pa ** 0.5) **
           2
-        : ((10 ** (2 * pool.token1.decimals - pool.token0.decimals) * depositedToken0) / positionLiquidity +
+        : ((10 ** (pool.token0.decimals / 2 + pool.token1.decimals / 2) * depositedToken0) / positionLiquidity +
             Pa ** 0.5) **
           2
       : Pa
@@ -953,7 +953,7 @@ export function PositionPage({
                       x2={Pb}
                       y1={(dE * Pmin) / 1.125 - baseValue - 0.01}
                       y2={dE * strike * 1.125 + feeValueTotal - baseValue + 0.01}
-                      fillOpacity={0.2}
+                      fillOpacity={0.15}
                       fill={inRange ? '#47b247' : '#cc333f'}
                     />
                     <Area type="basis" dataKey="y" stroke="#000" fill="url(#splitColor)" activeDot={false} />
