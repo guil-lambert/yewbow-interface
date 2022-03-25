@@ -26,7 +26,7 @@ import { useV3PositionFees } from 'hooks/useV3PositionFees'
 import { useAllPositions, useV3PositionFromTokenId } from 'hooks/useV3Positions'
 import { useActiveWeb3React } from 'hooks/web3'
 import JSBI from 'jsbi'
-import { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import ReactGA from 'react-ga'
 import { Link, RouteComponentProps } from 'react-router-dom'
 import {
@@ -367,9 +367,6 @@ export function PositionPage({
   const currency0 = token0 ? unwrappedToken(token0) : undefined
   const currency1 = token1 ? unwrappedToken(token1) : undefined
 
-  // flag for starting value
-  const [midpointStart, setMidpointStart] = useState(false)
-
   // flag for receiving WETH
   const [receiveWETH, setReceiveWETH] = useState(false)
 
@@ -413,6 +410,7 @@ export function PositionPage({
 
   // fees
   const [feeValue0, feeValue1] = useV3PositionFees(pool ?? undefined, positionDetails?.tokenId, receiveWETH)
+  const [radioState, setradioState] = useState('')
 
   const [collecting, setCollecting] = useState<boolean>(false)
   const [collectMigrationHash, setCollectMigrationHash] = useState<string | null>(null)
@@ -642,6 +640,8 @@ export function PositionPage({
           2
       : Pa
   const startPrice = startPriceInit > 10 ** 24 ? Pa : startPriceInit
+  //const shortAmount = 0.5 // Fraction of the position that is shorted, in fraction of total liquidity (0,1)
+  const shortAmount = Number(radioState) // Fraction of the position that is shorted, in fraction of total liquidity (0,1)
   const dtot = position && liquidity ? liquidity : 0
   const dL = position
     ? Pc > Pa && Pc < Pb
@@ -659,27 +659,20 @@ export function PositionPage({
       : (dE * (2 * (strike * Pb * r) ** 0.5 - strike - Pb)) / (r - 1)
   //const BE = (feeValueTotal * (1 - r)) / dE + strike * (-2 * r ** 0.5 + 2 * r)
   const BE = (baseValue * (1 - r) - feeValueETH * (1 - r)) / (dE + feeValueToken * (1 - r))
-  const Pe = (startPrice - feeValueETH / dE) / (1 + feeValueToken / dE)
-  const Pmin = midpointStart
-    ? Pa * 0.9 - dp
-    : Pc < Pe
-    ? Pc * 0.9
-    : Pe < Pa - dp
-    ? Pe * 0.9
-    : Pc < Pa - dp
-    ? Pc * 0.9
-    : Pc > Pb + dp
-    ? Pa * 0.9 - (Pc - Pb)
-    : Pa * 0.9 - dp
+  const Pmin = Pc < Pa - dp ? Pc * 0.9 : Pc > Pb + dp ? Pa * 0.9 - (Pc - Pb) : Pa * 0.9 - dp
   const Pmax = Pc > Pb + dp ? Pc * 1.1 : Pc < Pa - dp ? Pb * 1.1 + (Pa - Pc) : Pb * 1.1 + dp
   const topFees = dE * strike + feeValueTotal - baseValue
   const profit = removed
     ? amountCollectedUSD - amountDepositedUSD
     : Pc < Pb && Pc > Pa
-    ? (dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) + feeValueETH + feeValueToken * Pc - baseValue
+    ? (dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) +
+      feeValueETH +
+      feeValueToken * Pc -
+      baseValue -
+      dE * shortAmount * (Pc - startPrice)
     : Pc < Pa
-    ? dE * Pc + feeValueETH + feeValueToken * Pc - baseValue
-    : dE * strike + feeValueETH + feeValueToken * Pc - baseValue
+    ? dE * Pc + feeValueETH + feeValueToken * Pc - baseValue - dE * shortAmount * (Pc - startPrice)
+    : dE * strike + feeValueETH + feeValueToken * Pc - baseValue - dE * shortAmount * (Pc - startPrice)
   const feeGuts0 =
     Pc < Pb && Pc > Pa
       ? feeGrowthGlobal0X128 - feeUpperOutside0X128 - feeLowerOutside0X128
@@ -734,37 +727,26 @@ export function PositionPage({
     const xx = ((Pmax - Pmin) * pt) / nPt + Pmin
     const yy =
       xx < Pa
-        ? dE * xx + feeValueETH + feeValueToken * xx - baseValue
+        ? dE * xx + feeValueETH + feeValueToken * xx - baseValue - dE * shortAmount * (xx - startPrice)
         : xx >= Pa && xx < Pb
-        ? (dE * (2 * (strike * xx * r) ** 0.5 - strike - xx)) / (r - 1) + feeValueETH + feeValueToken * xx - baseValue
+        ? (dE * (2 * (strike * xx * r) ** 0.5 - strike - xx)) / (r - 1) +
+          feeValueETH +
+          feeValueToken * xx -
+          baseValue -
+          dE * shortAmount * (xx - startPrice)
         : xx >= Pb
-        ? dE * strike + feeValueETH + feeValueToken * xx - baseValue
+        ? dE * strike + feeValueETH + feeValueToken * xx - baseValue - dE * shortAmount * (xx - startPrice)
         : 0
     dataPayoff.push({ x: xx.toPrecision(5), y: yy.toPrecision(5) })
     dataPayoffX.push(xx.toPrecision(5))
     dataPayoffY.push(yy.toPrecision(5))
   }
-  const breakEven =
-    dataPayoffX[dataPayoffY.findIndex((obj) => obj > 0)] / 2 +
-    dataPayoffX.reverse()[dataPayoffY.reverse().findIndex((obj) => obj < 0)] / 2
-  const dataH = [
-    {
-      x: Pmin.toPrecision(5),
-      y: (dE * Pmin + feeValueETH + feeValueToken * Pmin - baseValue + (dE * (strike - Pmin)) / 2).toPrecision(5),
-    },
-    {
-      x: Pa.toPrecision(5),
-      y: (dE * Pa + feeValueETH + feeValueToken * Pa - baseValue + (dE * (strike - Pa)) / 2).toPrecision(5),
-    },
-    {
-      x: Pb.toPrecision(5),
-      y: (dE * Pb + feeValueETH + feeValueToken * Pb - baseValue + (dE * (strike - Pb)) / 2).toPrecision(5),
-    },
-    {
-      x: Pmax.toPrecision(5),
-      y: (dE * strike + feeValueETH + feeValueToken * Pmax - baseValue + (dE * (strike - Pmax)) / 2).toPrecision(5),
-    },
-  ]
+  const dPXr = dataPayoffX.slice().reverse()
+  const dPYr = dataPayoffY.slice().reverse()
+  const breakEven0 = dataPayoffY[0] < 0 ? dataPayoffX[dataPayoffY.findIndex((obj) => obj > 0)] : 0
+
+  const breakEven1 = dPYr[0] < 0 ? dPXr[dPYr.findIndex((obj) => obj > 0)] : 0
+
   const dataPc = [
     {
       label: 'spot',
@@ -775,27 +757,35 @@ export function PositionPage({
               (dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) +
               feeValueETH +
               feeValueToken * Pc -
-              baseValue
+              baseValue -
+              dE * shortAmount * (Pc - startPrice)
             ).toPrecision(3)
           : Pc < Pa
-          ? (dE * Pc + feeValueETH + feeValueToken * Pc - baseValue).toPrecision(3)
-          : (dE * strike + feeValueETH + feeValueToken * Pc - baseValue).toPrecision(3),
+          ? (dE * Pc + feeValueETH + feeValueToken * Pc - baseValue - dE * shortAmount * (Pc - startPrice)).toPrecision(
+              3
+            )
+          : (
+              dE * strike +
+              feeValueETH +
+              feeValueToken * Pc -
+              baseValue -
+              dE * shortAmount * (Pc - startPrice)
+            ).toPrecision(3),
       z: 7.5,
     },
   ]
   const dataPe = [
     {
       label: 'BE',
-      x: breakEven,
+      x: breakEven0 == 0 ? breakEven1 : breakEven0,
       y: 0,
       z: 7.5,
     },
-  ]
-  const dataPerf = [
     {
-      x: Pe.toPrecision(5),
-      y: (1 / (6.28 * 0.05 * Pe * 7 ** 0.5)) * Math.exp((Math.log(Pe) - Math.log(Pc)) ** 2),
-      z: 20,
+      label: 'BE',
+      x: breakEven1 == 0 ? breakEven0 : breakEven1,
+      y: 0,
+      z: 7.5,
     },
   ]
   const vol = pool ? pool.liquidity : 0
@@ -812,6 +802,14 @@ export function PositionPage({
 
     return dataMax / (dataMax - dataMin)
   }
+  const onRadioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setradioState(e.currentTarget.value)
+  }
+  const shortOps = [
+    { view: '0%', value: '0', checked: true },
+    { view: '50%', value: '0.5', checked: false },
+    { view: '100%', value: '1', checked: false },
+  ]
 
   const off = gradientOffset()
 
@@ -951,8 +949,8 @@ export function PositionPage({
                     <ReferenceArea
                       x1={Pa}
                       x2={Pb}
-                      y1={(dE * Pmin) / 1.125 - baseValue - 0.01}
-                      y2={dE * strike * 1.125 + feeValueTotal - baseValue + 0.01}
+                      y1={-Math.abs(Math.min(...dataPayoffY)) * 1.5}
+                      y2={Math.abs(Math.max(...dataPayoffY)) * 2}
                       fillOpacity={0.15}
                       fill={inRange ? '#47b247' : '#cc333f'}
                     />
@@ -993,8 +991,8 @@ export function PositionPage({
                     <ReferenceArea
                       x1={Pmin}
                       x2={Pmax}
-                      y1={removed ? -1 : (dE * Pmin) / 1.125 - baseValue}
-                      y2={removed ? 1 : dE * Pmin - baseValue}
+                      y1={removed ? -1 : -Math.abs(Math.min(...dataPayoffY)) * 1.5}
+                      y2={removed ? 1 : -Math.abs(Math.min(...dataPayoffY)) * 1.25}
                       fillOpacity={100}
                       fill={'#fff'}
                       label={removed ? 'Profit: ' + profit.toPrecision(6) + ' USD' : profit.toPrecision(6)}
@@ -1006,7 +1004,13 @@ export function PositionPage({
                       interval={0}
                       angle={-45}
                       tick={{ fontSize: 10 }}
-                      ticks={[Pe.toPrecision(3), Pa.toPrecision(3), Pc.toPrecision(3), Pb.toPrecision(3)]}
+                      ticks={[
+                        Pa.toPrecision(3),
+                        Pc.toPrecision(3),
+                        Pb.toPrecision(3),
+                        Number(breakEven0).toPrecision(3),
+                        Number(breakEven1).toPrecision(3),
+                      ]}
                       domain={[Pmin, Pmax]}
                       type="number"
                       label={{ value: 'Price', position: 'insideBottomRight', offset: 0 }}
@@ -1022,13 +1026,30 @@ export function PositionPage({
                       ]}
                       dataKey="y"
                       domain={[
-                        removed ? -1 : (dE * Pmin) / 1.125 - baseValue - 0.01,
-                        removed ? 1 : dE * strike * 1.125 + feeValueTotal - baseValue + 0.01,
+                        removed ? -1 : -Math.abs(Math.min(...dataPayoffY)) * 1.5,
+                        removed ? 1 : Math.max(...dataPayoffY) * 2,
                       ]}
                       label={{ value: 'Profit/Loss', angle: -90, position: 'insideLeft', offset: 5 }}
                     />
                     <ZAxis type="number" dataKey="z" range={[1, 100]} />
                   </ComposedChart>
+                  <div>
+                    Hedge Amount:
+                    {shortOps.map(({ view: title, value: shortAmt, checked: checked }: any) => {
+                      return (
+                        <>
+                          <input
+                            type="radio"
+                            value={shortAmt}
+                            name={shortAmt}
+                            checked={shortAmt == radioState}
+                            onChange={(e) => onRadioChange(e)}
+                          />
+                          {title}
+                        </>
+                      )
+                    })}
+                  </div>{' '}
                 </div>
               </DarkCard>
             ) : (
