@@ -650,7 +650,10 @@ export function PositionPage({
       ? amtTok / (Pa ** -0.5 - Pb ** -0.5)
       : amtETH / (Pb ** 0.5 - Pa ** 0.5)
     : 0
-  const dE = (dL * (Pb ** 0.5 - startPrice ** 0.5)) / (Pb * startPrice) ** 0.5
+  const dE =
+    startPrice < Pb
+      ? (dL * (Pb ** 0.5 - startPrice ** 0.5)) / (Pb * startPrice) ** 0.5
+      : (dL * (startPrice ** 0.5 - Pa ** 0.5)) / startPrice
   const baseValue =
     startPrice < Pb && startPrice > Pa
       ? (dE * (2 * (strike * startPrice * r) ** 0.5 - strike - startPrice)) / (r - 1)
@@ -745,7 +748,7 @@ export function PositionPage({
   const dPYr = dataPayoffY.slice().reverse()
   const breakEven0 = dataPayoffY[0] < 0 ? dataPayoffX[dataPayoffY.findIndex((obj) => obj > 0)] : 0
 
-  const breakEven1 = dPYr[0] < 0 ? dPXr[dPYr.findIndex((obj) => obj > 0)] : 0
+  const breakEven1 = dPYr[0] < 0 ? dPXr[dPYr.findIndex((obj) => obj > 0)] : Pb
 
   const dataPc = [
     {
@@ -777,13 +780,15 @@ export function PositionPage({
   const dataPe = [
     {
       label: 'BE',
-      x: breakEven0 == 0 ? breakEven1 : breakEven0,
+      //x: breakEven0 == 0 ? breakEven1 : breakEven0,
+      x: Pa,
       y: 0,
       z: 7.5,
     },
     {
       label: 'BE',
-      x: breakEven1 == 0 ? breakEven0 : breakEven1,
+      //x: breakEven1 == 0 ? breakEven0 : breakEven1,
+      x: Pb,
       y: 0,
       z: 7.5,
     },
@@ -955,11 +960,7 @@ export function PositionPage({
                       fill={inRange ? '#47b247' : '#cc333f'}
                     />
                     <Area type="basis" dataKey="y" stroke="#000" fill="url(#splitColor)" activeDot={false} />
-                    <ReferenceLine
-                      y={dE * strike + feeValueETH + feeValueToken * Pb - baseValue}
-                      stroke="#000"
-                      strokeDasharray="1 4"
-                    />
+                    <ReferenceLine y={Math.max(...dataPayoffY)} stroke="#000" strokeDasharray="1 4" />
                     <ReferenceLine y={0} stroke="#000" />
                     <Scatter data={dataPc}>
                       <LabelList
