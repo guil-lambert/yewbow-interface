@@ -639,6 +639,7 @@ export function PositionPage({
           2
       : Pa
   const startPrice = startPriceInit > 10 ** 24 ? Pa : startPriceInit
+  const startRatio = 1 - (((strike * r) / startPrice) ** 0.5 - 1) / (r - 1)
   //const shortAmount = 0.5 // Fraction of the position that is shorted, in fraction of total liquidity (0,1)
   const shortAmount = Number(radioState) // Fraction of the position that is shorted, in fraction of total liquidity (0,1)
   const dtot = position && liquidity ? liquidity : 0
@@ -779,15 +780,13 @@ export function PositionPage({
   const dataPe = [
     {
       label: 'BE',
-      //x: breakEven0 == 0 ? breakEven1 : breakEven0,
-      x: Pa,
+      x: breakEven0 == 0 && breakEven1 != 0 ? breakEven1 : breakEven0 != 0 ? breakEven0 : Pa,
       y: 0,
       z: 7.5,
     },
     {
       label: 'BE',
-      //x: breakEven1 == 0 ? breakEven0 : breakEven1,
-      x: Pb,
+      x: breakEven1 == 0 && breakEven0 != 0 ? breakEven0 : breakEven1 != 0 ? breakEven1 : Pb,
       y: 0,
       z: 7.5,
     },
@@ -809,11 +808,17 @@ export function PositionPage({
   const onRadioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setradioState(e.currentTarget.value)
   }
-  const shortOps = [
-    { view: '0%', value: '0', checked: true },
-    { view: '50%', value: '0.5', checked: false },
-    { view: '100%', value: '1', checked: false },
-  ]
+  const shortOps =
+    Math.abs(Math.abs(startRatio - 0.5) - 0.5) < 0.01
+      ? [
+          { view: '0%', value: '0', checked: true },
+          { view: '100%', value: '1', checked: false },
+        ]
+      : [
+          { view: '0%', value: '0', checked: true },
+          { view: (100 * startRatio).toFixed(0) + '%', value: startRatio.toString(), checked: false },
+          { view: '100%', value: '1', checked: false },
+        ]
 
   const off = gradientOffset()
 
