@@ -364,11 +364,10 @@ export function PositionPage({
 
   const metadata = usePositionTokenURI(parsedTokenId)
 
-  const currency0 = token0 ? unwrappedToken(token0) : undefined
-  const currency1 = token1 ? unwrappedToken(token1) : undefined
-
   // flag for receiving WETH
-  const [receiveWETH, setReceiveWETH] = useState(false)
+  const [receiveWETH, setReceiveWETH] = useState(true)
+  const currency0 = token0 ? token0 : undefined
+  const currency1 = token1 ? token1 : undefined
 
   // construct Position from details returned
   const [poolState, pool] = usePool(token0 ?? undefined, token1 ?? undefined, feeAmount)

@@ -7,7 +7,7 @@ interface BurnV3State {
 }
 
 const initialState: BurnV3State = {
-  percent: 0,
+  percent: 100,
 }
 
 export default createReducer<BurnV3State>(initialState, (builder) =>

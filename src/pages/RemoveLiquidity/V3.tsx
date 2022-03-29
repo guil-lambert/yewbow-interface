@@ -70,7 +70,7 @@ function Remove({ tokenId }: { tokenId: BigNumber }) {
   const { account, chainId, library } = useActiveWeb3React()
 
   // flag for receiving WETH
-  const [receiveWETH, setReceiveWETH] = useState(false)
+  const [receiveWETH, setReceiveWETH] = useState(true)
 
   // burn state
   const { percent } = useBurnV3State()
