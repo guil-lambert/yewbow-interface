@@ -3,7 +3,6 @@ import { RowFixed } from 'components/Row'
 import useGasPrice from 'hooks/useGasPrice'
 import JSBI from 'jsbi'
 import { useEffect, useState } from 'react'
-import { useAppSelector } from 'state/hooks'
 import styled, { keyframes } from 'styled-components/macro'
 
 import { useActiveWeb3React } from '../../hooks/web3'
@@ -89,7 +88,6 @@ export default function Polling() {
   const blockNumber = useBlockNumber()
   const [isMounting, setIsMounting] = useState(false)
   const [isHover, setIsHover] = useState(false)
-  const chainConnectivityWarning = useAppSelector((state) => state.application.chainConnectivityWarning)
   const ethGasPrice = useGasPrice()
   const priceGwei = ethGasPrice ? JSBI.divide(ethGasPrice, JSBI.BigInt(1000000000)) : undefined
 

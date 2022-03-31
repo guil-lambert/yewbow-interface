@@ -2,7 +2,7 @@ import { BigNumber } from '@ethersproject/bignumber'
 import { TransactionResponse } from '@ethersproject/providers'
 import { Trans } from '@lingui/macro'
 import { Currency, CurrencyAmount, Fraction, Percent, Price, Token } from '@uniswap/sdk-core'
-import { computePoolAddress, NonfungiblePositionManager, Pool, Position } from '@uniswap/v3-sdk'
+import { NonfungiblePositionManager, Pool, Position } from '@uniswap/v3-sdk'
 import Badge from 'components/Badge'
 import { ButtonConfirmed, ButtonGray, ButtonPrimary } from 'components/Button'
 import { DarkCard, LightCard } from 'components/Card'
@@ -16,7 +16,7 @@ import { Dots } from 'components/swap/styleds'
 import Toggle from 'components/Toggle'
 import TransactionConfirmationModal, { ConfirmationModalContent } from 'components/TransactionConfirmationModal'
 import { SupportedChainId } from 'constants/chains'
-import { erf } from 'extra-math'
+//import { erf } from 'extra-math'
 import { useToken } from 'hooks/Tokens'
 import { useV3NFTPositionManagerContract } from 'hooks/useContract'
 import useIsTickAtLimit from 'hooks/useIsTickAtLimit'
@@ -25,20 +25,15 @@ import useUSDCPrice from 'hooks/useUSDCPrice'
 import { useV3PositionFees } from 'hooks/useV3PositionFees'
 import { useAllPositions, useV3PositionFromTokenId } from 'hooks/useV3Positions'
 import { useActiveWeb3React } from 'hooks/web3'
-import JSBI from 'jsbi'
 import React, { useCallback, useMemo, useState } from 'react'
 import ReactGA from 'react-ga'
 import { Link, RouteComponentProps } from 'react-router-dom'
 import {
   Area,
-  AreaChart,
-  CartesianGrid,
   ComposedChart,
   LabelList,
-  Line,
   ReferenceArea,
   ReferenceLine,
-  ResponsiveContainer,
   Scatter,
   Tooltip,
   XAxis,
@@ -53,13 +48,11 @@ import { ExternalLink, HideExtraSmall, TYPE } from 'theme'
 import { currencyId } from 'utils/currencyId'
 import { formatCurrencyAmount } from 'utils/formatCurrencyAmount'
 import { formatTickPrice } from 'utils/formatTickPrice'
-import { unwrappedToken } from 'utils/unwrappedToken'
 
 import RangeBadge from '../../components/Badge/RangeBadge'
 import { getPriceOrderingFromPositionForUI } from '../../components/PositionListItem'
 import RateToggle from '../../components/RateToggle'
 import { SwitchLocaleLink } from '../../components/SwitchLocaleLink'
-import { V3_CORE_FACTORY_ADDRESSES } from '../../constants/addresses'
 import { WETH9_EXTENDED } from '../../constants/tokens'
 import { usePositionTokenURI } from '../../hooks/usePositionTokenURI'
 import useTheme from '../../hooks/useTheme'
@@ -347,8 +340,6 @@ export function PositionPage({
     tickLower,
     tickUpper,
     tokenId,
-    tokensOwed0,
-    tokensOwed1,
   } = positionDetails || {}
   const addTransaction = useTransactionAdder()
   const positionManager = useV3NFTPositionManagerContract()
@@ -379,7 +370,6 @@ export function PositionPage({
   }, [liquidity, pool, tickLower, tickUpper])
 
   const tickAtLimit = useIsTickAtLimit(feeAmount, tickLower, tickUpper)
-  const v3CoreFactoryAddress = chainId && V3_CORE_FACTORY_ADDRESSES[chainId]
 
   const pricesFromPosition = getPriceOrderingFromPositionForUI(position)
   const [manuallyInverted, setManuallyInverted] = useState(true)
@@ -500,18 +490,17 @@ export function PositionPage({
   const poolAddress =
     currency0 && currency1 && feeAmount ? Pool.getAddress(currency0?.wrapped, currency1?.wrapped, feeAmount) : ' '
 
-  const p0 = tokenId && positions.positions ? positions.positions.filter((obj) => obj.id == tokenId.toString()) : 0
   const currentPosition =
     tokenId && positions.positions ? positions.positions.filter((obj) => obj.id == tokenId.toString()) : 0
   const depositedToken0 = currentPosition != 0 ? currentPosition[0].depositedToken0 : 1
   const depositedToken1 = currentPosition != 0 ? currentPosition[0].depositedToken1 : 1
-  const collectedFeesToken0 = currentPosition != 0 ? currentPosition[0].collectedFeesToken0 : 1
-  const collectedFeesToken1 = currentPosition != 0 ? currentPosition[0].collectedFeesToken1 : 1
+  //const collectedFeesToken0 = currentPosition != 0 ? currentPosition[0].collectedFeesToken0 : 1
+  //const collectedFeesToken1 = currentPosition != 0 ? currentPosition[0].collectedFeesToken1 : 1
   const positionLiquidity = currentPosition != 0 ? currentPosition[0].liquidity : 1
   const feeGrowthInside0LastX128 = currentPosition != 0 ? currentPosition[0].feeGrowthInside0LastX128 : 1
   const feeGrowthInside1LastX128 = currentPosition != 0 ? currentPosition[0].feeGrowthInside1LastX128 : 1
   const b256 = BigNumber.from('115792089237316195423570985008687907853269984665640564039457584007913129639936')
-  const b128 = BigNumber.from('340282366920938463463374607431768211456')
+  //const b128 = BigNumber.from('340282366920938463463374607431768211456')
   const feeGrowthLast0 = b256.sub(BigNumber.from(feeGrowthInside0LastX128))
   const feeGrowthLast1 = b256.sub(BigNumber.from(feeGrowthInside1LastX128))
   const feeGrowthGlobal0X128 = currentPosition != 0 ? currentPosition[0].pool.feeGrowthGlobal0X128 : 1
@@ -521,7 +510,7 @@ export function PositionPage({
   const feeUpperOutside0X128 = currentPosition != 0 ? currentPosition[0].tickUpper.feeGrowthOutside0X128 : 1
   const feeUpperOutside1X128 = currentPosition != 0 ? currentPosition[0].tickUpper.feeGrowthOutside1X128 : 1
   const amountDepositedUSD = currentPosition != 0 ? currentPosition[0].amountDepositedUSD : 1
-  const amountWithdrawnUSD = currentPosition != 0 ? currentPosition[0].amountWithdrawnUSD : 1
+  //const amountWithdrawnUSD = currentPosition != 0 ? currentPosition[0].amountWithdrawnUSD : 1
   const amountCollectedUSD = currentPosition != 0 ? currentPosition[0].amountCollectedUSD : 1
   //const dep0 = positions.positions.find((id) => id == parseInt(tokenId)).depositedToken0
   const dec0 = pool ? pool.token0.decimals : 18
@@ -543,26 +532,12 @@ export function PositionPage({
       : undefined
   const inRange: boolean = typeof below === 'boolean' && typeof above === 'boolean' ? !below && !above : false
 
-  const fees = fiatValueOfFees ? parseFloat(fiatValueOfFees.toFixed(4)) : 0
-  const liqFiatValue = fiatValueOfLiquidity ? parseFloat(fiatValueOfLiquidity.toFixed(4)) : 0
   const currencyETH =
     currency0 && currency1 && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
         ? currency1
         : currency0
       : currency1
-  const baseSymbol =
-    currencyQuote && currencyBase && chainId
-      ? token1Address == WETH9_EXTENDED[chainId]?.address
-        ? currencyBase.symbol
-        : currencyQuote.symbol
-      : ' '
-  const tokenSymbol =
-    currencyQuote && currencyBase && chainId
-      ? token1Address == WETH9_EXTENDED[chainId]?.address
-        ? currencyQuote.symbol
-        : currencyBase.symbol
-      : ' '
   const amtETH =
     position && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
@@ -642,7 +617,6 @@ export function PositionPage({
   const startRatio = 1 - (((strike * r) / startPrice) ** 0.5 - 1) / (r - 1)
   //const shortAmount = 0.5 // Fraction of the position that is shorted, in fraction of total liquidity (0,1)
   const shortAmount = Number(radioState) // Fraction of the position that is shorted, in fraction of total liquidity (0,1)
-  const dtot = position && liquidity ? liquidity : 0
   const dL = position
     ? Pc > Pa && Pc < Pb
       ? amtETH / (Pc ** 0.5 - Pa ** 0.5)
@@ -661,10 +635,8 @@ export function PositionPage({
       ? dE * startPrice
       : (dE * (2 * (strike * Pb * r) ** 0.5 - strike - Pb)) / (r - 1)
   //const BE = (feeValueTotal * (1 - r)) / dE + strike * (-2 * r ** 0.5 + 2 * r)
-  const BE = (baseValue * (1 - r) - feeValueETH * (1 - r)) / (dE + feeValueToken * (1 - r))
   const Pmin = Pc < Pa - dp ? Pc * 0.9 : Pc > Pb + dp ? Pa * 0.9 - (Pc - Pb) : Pa * 0.9 - dp
   const Pmax = Pc > Pb + dp ? Pc * 1.1 : Pc < Pa - dp ? Pb * 1.1 + (Pa - Pc) : Pb * 1.1 + dp
-  const topFees = dE * strike + feeValueTotal - baseValue
   const profit = removed
     ? amountCollectedUSD - amountDepositedUSD
     : Pc < Pb && Pc > Pa
@@ -709,13 +681,6 @@ export function PositionPage({
       ? (currentPosition[0].pool.liquidity *
           (1.0001 ** (-currentPosition[0].pool.tick / 2 + currentPosition[0].pool.feeTier / 200) -
             1.0001 ** (-currentPosition[0].pool.tick / 2 - currentPosition[0].pool.feeTier / 200))) /
-        10 ** 18
-      : 0
-  const tickY =
-    currentPosition != 0
-      ? (currentPosition[0].pool.liquidity *
-          (1.0001 ** (currentPosition[0].pool.tick / 2 + currentPosition[0].pool.feeTier / 200) -
-            1.0001 ** (currentPosition[0].pool.tick / 2 - currentPosition[0].pool.feeTier / 200))) /
         10 ** 18
       : 0
   const tickTVL = tickX * parseFloat(ETHprice ? ETHprice.toFixed(2) : '1')
@@ -791,7 +756,6 @@ export function PositionPage({
       z: 7.5,
     },
   ]
-  const vol = pool ? pool.liquidity : 0
   const gradientOffset = () => {
     const dataMax = Math.max(...dataPayoff.map((i) => parseFloat(i.y)))
     const dataMin = Math.min(...dataPayoff.map((i) => parseFloat(i.y)))
@@ -1040,7 +1004,7 @@ export function PositionPage({
                   </ComposedChart>
                   <div>
                     Hedge Amount:
-                    {shortOps.map(({ view: title, value: shortAmt, checked: checked }: any) => {
+                    {shortOps.map(({ view: title, value: shortAmt }: any) => {
                       return (
                         <>
                           <input
@@ -1167,9 +1131,10 @@ export function PositionPage({
                       <Trans>
                         Unclaimed fees:
                         <br />
+                        {volatility}
                       </Trans>
                     </Label>
-                    {fiatValueOfFees?.greaterThan(new Fraction(1, 100)) ? (
+                    {fiatValueOfFees?.greaterThan(new Fraction(1, 10000)) ? (
                       <TYPE.largeHeader color={theme.green1} fontSize="24px" fontWeight={500}>
                         <ResponsiveRow>
                           <RowFixed>
@@ -1185,7 +1150,7 @@ export function PositionPage({
                       </TYPE.largeHeader>
                     ) : (
                       <TYPE.largeHeader color={theme.text1} fontSize="36px" fontWeight={500}>
-                        <Trans>$-</Trans>
+                        <Trans>{(feeVal0 + Pc * feeVal1).toPrecision(3)}</Trans>
                       </TYPE.largeHeader>
                     )}
                   </AutoColumn>
@@ -1201,7 +1166,9 @@ export function PositionPage({
                           <TYPE.main>{feeValueUpper?.currency?.symbol}</TYPE.main>
                         </RowFixed>
                         <RowFixed>
-                          <TYPE.main>{feeValueUpper ? formatCurrencyAmount(feeValueUpper, 4) : '-'}</TYPE.main>
+                          <TYPE.main>
+                            {feeValueUpper ? formatCurrencyAmount(feeValueUpper, 4) : feeVal0.toPrecision(3)}
+                          </TYPE.main>
                         </RowFixed>
                       </RowBetween>
                       <RowBetween>
@@ -1214,7 +1181,9 @@ export function PositionPage({
                           <TYPE.main>{feeValueLower?.currency?.symbol}</TYPE.main>
                         </RowFixed>
                         <RowFixed>
-                          <TYPE.main>{feeValueLower ? formatCurrencyAmount(feeValueLower, 4) : '-'}</TYPE.main>
+                          <TYPE.main>
+                            {feeValueLower ? formatCurrencyAmount(feeValueLower, 4) : feeVal1.toPrecision(3)}
+                          </TYPE.main>
                         </RowFixed>
                       </RowBetween>
                     </AutoColumn>

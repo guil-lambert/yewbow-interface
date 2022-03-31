@@ -181,8 +181,6 @@ function Remove({ tokenId }: { tokenId: BigNumber }) {
     addTransaction,
     positionManager,
     chainId,
-    feeValue0,
-    feeValue1,
     library,
     liquidityPercentage,
     positionSDK,

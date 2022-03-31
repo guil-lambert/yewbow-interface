@@ -1,26 +1,21 @@
 import { Trans } from '@lingui/macro'
 import { Percent, Price, Token } from '@uniswap/sdk-core'
 import { Position } from '@uniswap/v3-sdk'
-import Badge from 'components/Badge'
 import RangeBadge from 'components/Badge/RangeBadge'
 import DoubleCurrencyLogo from 'components/DoubleLogo'
-import FormattedCurrencyAmount from 'components/FormattedCurrencyAmount'
-import HoverInlineText from 'components/HoverInlineText'
 import Loader from 'components/Loader'
 import { RowBetween } from 'components/Row'
 import { useToken } from 'hooks/Tokens'
 import useIsTickAtLimit from 'hooks/useIsTickAtLimit'
 import { usePool } from 'hooks/usePools'
 import { useV3PositionFees } from 'hooks/useV3PositionFees'
-import { useV3Positions } from 'hooks/useV3Positions'
 import numbro from 'numbro'
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Bound } from 'state/mint/v3/actions'
 import styled from 'styled-components/macro'
-import { HideSmall, MEDIA_WIDTHS, SmallOnly, TYPE } from 'theme'
+import { MEDIA_WIDTHS, TYPE } from 'theme'
 import { PositionDetails } from 'types/position'
-import { formatCurrencyAmount } from 'utils/formatCurrencyAmount'
 import { formatTickPrice } from 'utils/formatTickPrice'
 import { unwrappedToken } from 'utils/unwrappedToken'
 
@@ -90,14 +85,6 @@ const LinkRow = styled(Link)`
   `};
 `
 
-const BadgeText = styled.div`
-  font-weight: 500;
-  font-size: 14px;
-  ${({ theme }) => theme.mediaWidth.upToSmall`
-    font-size: 12px;
-  `};
-`
-
 const DataLineItem = styled.div`
   font-size: 14px;
 `
@@ -117,30 +104,6 @@ const RangeLineItem = styled(DataLineItem)`
 `};
 `
 
-const DoubleArrow = styled.span`
-  margin: 0 2px;
-  color: ${({ theme }) => theme.text3};
-  ${({ theme }) => theme.mediaWidth.upToSmall`
-    margin: 4px;
-    padding: 20px;
-  `};
-`
-
-const RangeText = styled.span`
-  /* background-color: ${({ theme }) => theme.bg2}; */
-  padding: 0.25rem 0.5rem;
-  border-radius: 2px;
-`
-
-const ExtentsText = styled.span`
-  color: ${({ theme }) => theme.text3};
-  font-size: 14px;
-  margin-right: 4px;
-  ${({ theme }) => theme.mediaWidth.upToSmall`
-    display: none;
-  `};
-`
-
 const PrimaryPositionIdData = styled.div`
   display: grid;
   grid-gap: 3em;
@@ -149,15 +112,6 @@ const PrimaryPositionIdData = styled.div`
   > * {
     margin-right: 0px;
   }
-`
-
-const DataText = styled.div`
-  font-weight: 600;
-  font-size: 18px;
-
-  ${({ theme }) => theme.mediaWidth.upToSmall`
-    font-size: 14px;
-  `};
 `
 
 interface PositionListItemProps {
@@ -254,30 +208,15 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
   const currencyQuote = quote && unwrappedToken(quote)
   const currencyBase = base && unwrappedToken(base)
 
-  // check if price is within range
-  const below = pool && typeof tickLower === 'number' ? pool.tickCurrent < tickLower : undefined
-  const above = pool && typeof tickUpper === 'number' ? pool.tickCurrent >= tickUpper : undefined
-  const inRange: boolean = typeof below === 'boolean' && typeof above === 'boolean' ? !below && !above : false
-
   const currentPrice = pool ? 1.0001 ** pool.tickCurrent * 10 ** (pool.token0.decimals - pool.token1.decimals) : 1
   const formattedPrice = currentPrice ? Math.max(currentPrice, 1 / currentPrice) : 1
-  const feeBase =
-    currentPrice > 1
-      ? formattedPrice == currentPrice
-        ? currencyBase?.symbol
-        : currencyQuote?.symbol
-      : currencyBase?.symbol
   const lowPrice = formatTickPrice(priceLower, tickAtLimit, Bound.UPPER)
   const highPrice = formatTickPrice(priceUpper, tickAtLimit, Bound.UPPER)
 
   //const below = formattedPrice ? formatAmount(formattedPrice) < lowPrice : undefined
   //const above = formattedPrice ? formatAmount(formattedPrice) >= highPrice : undefined
-  const insideRange = formattedPrice
-    ? formatAmount(formattedPrice) > lowPrice && formatAmount(formattedPrice) <= highPrice
-    : undefined
 
   const removed = liquidity?.eq(0)
-  const inverted = token1 ? base?.equals(token1) : undefined
   const fg =
     feeValue0 && feeValue1
       ? feeValue1.toSignificant(2) < feeValue0.toSignificant(2)
@@ -317,13 +256,6 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
       ? Math.abs(parseFloat(liquidity.toString()) * (Pc ** -0.5 - Pb ** -0.5)) / 10 ** (decs0 / 2 + decs1 / 2)
       : 0
     : 0
-  const positionValue = yMax / Pc + xMax > 0 ? yMax / Pc + xMax : 0
-  const startValue = liquidity
-    ? Math.abs(Pa * parseFloat(liquidity.toString()) * (Pb ** 0.5 - Pa ** 0.5)) / 10 ** (decs0 / 2 + decs1 / 2)
-    : 0
-  function add(Pc?: number, Plower?: number) {
-    return Pc && Plower ? Pc + Plower : 0
-  }
 
   return (
     <LinkRow to={positionSummaryLink}>

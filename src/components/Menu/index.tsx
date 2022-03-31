@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-restricted-imports
 import { t } from '@lingui/macro'
 import { Trans } from '@lingui/macro'
-import { CHAIN_INFO, L2_CHAIN_IDS, SupportedChainId } from 'constants/chains'
+import { CHAIN_INFO, SupportedChainId } from 'constants/chains'
 import { LOCALE_LABEL, SUPPORTED_LOCALES, SupportedLocale } from 'constants/locales'
 import { useActiveLocale } from 'hooks/useActiveLocale'
 import { useLocationLinkProps } from 'hooks/useLocationLinkProps'
@@ -17,7 +17,6 @@ import { useActiveWeb3React } from '../../hooks/web3'
 import { useModalOpen, useToggleModal } from '../../state/application/hooks'
 import { ApplicationModal } from '../../state/application/reducer'
 import { ExternalLink } from '../../theme'
-import { ButtonPrimary } from '../Button'
 
 export enum FlyoutAlignment {
   LEFT = 'LEFT',
@@ -54,12 +53,6 @@ const StyledMenuButton = styled.button`
   svg {
     margin-top: 2px;
   }
-`
-
-const UNIbutton = styled(ButtonPrimary)`
-  background-color: ${({ theme }) => theme.bg3};
-  background: radial-gradient(174.47% 188.91% at 1.84% 0%, #ff007a 0%, #2172e5 100%), #edeef2;
-  border: none;
 `
 
 const StyledMenu = styled.div`
@@ -198,14 +191,12 @@ function LanguageMenu({ close }: { close: () => void }) {
 }
 
 export default function Menu() {
-  const { account, chainId } = useActiveWeb3React()
+  const { chainId } = useActiveWeb3React()
 
   const node = useRef<HTMLDivElement>()
   const open = useModalOpen(ApplicationModal.MENU)
   const toggle = useToggleModal(ApplicationModal.MENU)
   useOnClickOutside(node, open ? toggle : undefined)
-  const openClaimModal = useToggleModal(ApplicationModal.ADDRESS_CLAIM)
-  const showUNIClaimOption = Boolean(!!account && !!chainId && !L2_CHAIN_IDS.includes(chainId))
   const { infoLink } = CHAIN_INFO[chainId ? chainId : SupportedChainId.MAINNET]
 
   const [darkMode, toggleDarkMode] = useDarkModeManager()
