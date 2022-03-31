@@ -151,6 +151,7 @@ function CurrentPriceCard({
   owner,
   poolAddress,
   chainId,
+  tokenId,
   amountDepositedUSD,
   amountCollectedUSD,
 }: {
@@ -163,6 +164,7 @@ function CurrentPriceCard({
   owner?: null
   poolAddress?: string
   chainId?: number
+  tokenId?: number
   amountDepositedUSD?: string
   amountCollectedUSD?: string
 }) {
@@ -176,7 +178,7 @@ function CurrentPriceCard({
         <RowFixed>
           <AutoColumn gap="8px" justify="start">
             <ExtentsText>
-              <TYPE.mediumHeader textAlign="center">Pool Info/Links</TYPE.mediumHeader>
+              <TYPE.mediumHeader textAlign="center">Pool/Position Links</TYPE.mediumHeader>
             </ExtentsText>
             <ExtentsText>
               <ExternalLink href={getExplorerLink(chainId, owner, ExplorerDataType.ADDRESS)}>
@@ -189,8 +191,13 @@ function CurrentPriceCard({
               </ExternalLink>
             </ExtentsText>
             <ExtentsText>
-              <ExternalLink href={'http://info.yewbow.org/#/pools/' + poolAddress}>
+              <ExternalLink href={'https://info.yewbow.org/#/pools/' + poolAddress}>
                 <Trans>Pool info</Trans>
+              </ExternalLink>
+            </ExtentsText>
+            <ExtentsText>
+              <ExternalLink href={'https://etherscan.io/nft/0xc36442b4a4522e871399cd717abdd847ab11fe88/' + tokenId}>
+                <Trans>See NFT</Trans>
               </ExternalLink>
             </ExtentsText>
           </AutoColumn>
@@ -683,7 +690,17 @@ export function PositionPage({
             1.0001 ** (-currentPosition[0].pool.tick / 2 - currentPosition[0].pool.feeTier / 200))) /
         10 ** 18
       : 0
-  const tickTVL = tickX * parseFloat(ETHprice ? ETHprice.toFixed(2) : '1')
+  const tickY =
+    currentPosition != 0
+      ? (currentPosition[0].pool.liquidity *
+          (1.0001 ** (currentPosition[0].pool.tick / 2 + currentPosition[0].pool.feeTier / 200) -
+            1.0001 ** (currentPosition[0].pool.tick / 2 - currentPosition[0].pool.feeTier / 200))) /
+        10 ** 18
+      : 0
+  const tickTVL =
+    token0 == currencyETH
+      ? tickX * parseFloat(ETHprice ? ETHprice.toFixed(2) : '1')
+      : tickY * parseFloat(ETHprice ? ETHprice.toFixed(2) : '1')
   const volumeUSD = currentPosition != 0 ? currentPosition[0].pool.poolDayData[0].volumeUSD : 1
   const volatility =
     currentPosition != 0 ? (2 * currentPosition[0].pool.feeTier * ((365 * volumeUSD) / tickTVL) ** 0.5) / 1000000 : 0
@@ -864,6 +881,11 @@ export function PositionPage({
                 <Badge style={{ marginRight: '8px' }}>
                   <BadgeText>
                     <Trans>{new Percent(feeAmount, 1_000_000).toSignificant()}%</Trans>
+                  </BadgeText>
+                </Badge>
+                <Badge style={{ marginRight: '8px' }}>
+                  <BadgeText>
+                    <Trans>Volatility: {(volatility * 100).toFixed(1)}%</Trans>
                   </BadgeText>
                 </Badge>
                 <RangeBadge removed={removed} inRange={inRange} aboveRange={!above} belowRange={!below} />
@@ -1131,7 +1153,6 @@ export function PositionPage({
                       <Trans>
                         Unclaimed fees:
                         <br />
-                        {volatility}
                       </Trans>
                     </Label>
                     {fiatValueOfFees?.greaterThan(new Fraction(1, 10000)) ? (
@@ -1321,6 +1342,7 @@ export function PositionPage({
                 strike={strike}
                 owner={owner}
                 poolAddress={poolAddress}
+                tokenId={Number(tokenId)}
                 chainId={chainId}
                 amountDepositedUSD={amountDepositedUSD}
                 amountCollectedUSD={amountCollectedUSD}
