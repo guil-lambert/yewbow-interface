@@ -5,6 +5,7 @@ import { Currency, CurrencyAmount, Percent } from '@uniswap/sdk-core'
 import { FeeAmount, NonfungiblePositionManager, Pool } from '@uniswap/v3-sdk'
 import DowntimeWarning from 'components/DowntimeWarning'
 import UnsupportedCurrencyFooter from 'components/swap/UnsupportedCurrencyFooter'
+import { erf, log } from 'mathjs'
 import { useCallback, useContext, useEffect, useState } from 'react'
 import { AlertTriangle } from 'react-feather'
 import ReactGA from 'react-ga'
@@ -45,6 +46,7 @@ import { useDerivedPositionInfo } from '../../hooks/useDerivedPositionInfo'
 import { useIsSwapUnsupported } from '../../hooks/useIsSwapUnsupported'
 import useTransactionDeadline from '../../hooks/useTransactionDeadline'
 import { useUSDCValue } from '../../hooks/useUSDCPrice'
+import useUSDCPrice from '../../hooks/useUSDCPrice'
 import { useAllPositions, useV3PositionFromTokenId } from '../../hooks/useV3Positions'
 import { useActiveWeb3React } from '../../hooks/web3'
 import { useWalletModalToggle } from '../../state/application/hooks'
@@ -140,12 +142,46 @@ export default function AddLiquidity({
     baseCurrency && quoteCurrency && feeAmount
       ? Pool.getAddress(baseCurrency?.wrapped, quoteCurrency?.wrapped, feeAmount)
       : ' '
+  const poolPositions = useAllPositions('0x', poolAddress.toLowerCase())
   const positions = useAllPositions(account ? account : undefined, poolAddress.toLowerCase())
   const { onFieldAInput, onFieldBInput, onLeftRangeInput, onRightRangeInput, onStartPriceInput } =
     useV3MintActionHandlers(noLiquidity)
 
   const isValid = !errorMessage && !invalidRange
 
+  const currentPosition = poolPositions.positions ? poolPositions.positions : 0
+  const currencyETH =
+    baseCurrency && quoteCurrency && chainId
+      ? baseCurrency == WETH9_EXTENDED[chainId]
+        ? baseCurrency
+        : quoteCurrency
+      : quoteCurrency
+  const ETHprice = useUSDCPrice(WETH9_EXTENDED[1] ?? undefined)
+  const tickX =
+    currentPosition != 0
+      ? (currentPosition[0].pool.liquidity *
+          (1.0001 ** (-currentPosition[0].pool.tick / 2 + currentPosition[0].pool.feeTier / 200) -
+            1.0001 ** (-currentPosition[0].pool.tick / 2 - currentPosition[0].pool.feeTier / 200))) /
+        10 ** currentPosition[0].token0.decimals
+      : 0
+  const tickY =
+    currentPosition != 0
+      ? (currentPosition[0].pool.liquidity *
+          (1.0001 ** (currentPosition[0].pool.tick / 2 + currentPosition[0].pool.feeTier / 200) -
+            1.0001 ** (currentPosition[0].pool.tick / 2 - currentPosition[0].pool.feeTier / 200))) /
+        10 ** currentPosition[0].token1.decimals
+      : 0
+  const tickTVL =
+    currentPosition != 0
+      ? currentPosition[0].token0.derivedETH == 1
+        ? tickX * parseFloat(ETHprice ? ETHprice.toFixed(2) : '1')
+        : tickY * parseFloat(ETHprice ? ETHprice.toFixed(2) : '1')
+      : 1
+
+  const dayData = currentPosition != 0 ? currentPosition[0].pool.poolDayData : 0
+  const volumeUSD = dayData != 0 ? dayData[0].volumeUSD : 1
+  const volatility =
+    currentPosition != 0 ? (2 * currentPosition[0].pool.feeTier * (volumeUSD / tickTVL) ** 0.5) / 1000000 : 0
   // modal and loading
   const [showConfirm, setShowConfirm] = useState<boolean>(false)
   const [attemptingTxn, setAttemptingTxn] = useState<boolean>(false) // clicked confirm
@@ -465,6 +501,14 @@ export default function AddLiquidity({
   const { getDecrementLower, getIncrementLower, getDecrementUpper, getIncrementUpper, getSetFullRange } =
     useRangeHopCallbacks(baseCurrency ?? undefined, quoteCurrency ?? undefined, feeAmount, tickLower, tickUpper, pool)
 
+  const currentPrice = price ? parseFloat((invertPrice ? price.invert() : price).toSignificant(10)) : 1
+  const upperPrice = priceUpper ? parseFloat((invertPrice ? priceUpper.invert() : priceUpper).toSignificant(10)) : 1
+  const lowerPrice = priceLower ? parseFloat((invertPrice ? priceLower.invert() : priceLower).toSignificant(10)) : 1
+  const strike = (upperPrice * lowerPrice) ** 0.5
+  const r = upperPrice > lowerPrice ? (upperPrice / lowerPrice) ** 0.5 : (lowerPrice / upperPrice) ** 0.5
+  const dte = (((2 * 3.1416) / volatility ** 2) * (r ** 0.5 - 1) ** 2) / (r ** 0.5 + 1) ** 2
+  const delta =
+    0.5 - 0.5 * erf((log(currentPrice / strike) + (dte / 2) * volatility ** 2) / (volatility * (2 * dte) ** 0.5))
   // we need an existence check on parsed amounts for single-asset deposits
   const showApprovalA =
     !argentWalletContract && approvalA !== ApprovalState.APPROVED && !!parsedAmounts[Field.CURRENCY_A]
@@ -803,6 +847,15 @@ export default function AddLiquidity({
                                 <TYPE.body color="text2" fontSize={12}>
                                   {quoteCurrency?.symbol} per {baseCurrency.symbol}
                                 </TYPE.body>
+                                <TYPE.main fontWeight={500} textAlign="center" fontSize={12} color="text1">
+                                  Volatility: {(100 * volatility * 365 ** 0.5).toFixed(0)}%
+                                </TYPE.main>
+                                <TYPE.main fontWeight={500} textAlign="center" fontSize={12} color="text1">
+                                  Effective days to expiration: {dte > 1 ? dte.toFixed(0) : '<1'}d
+                                </TYPE.main>
+                                <TYPE.main fontWeight={500} textAlign="center" fontSize={12} color="text1">
+                                  Effective strike delta: {(delta * 100).toFixed(0)}
+                                </TYPE.main>
                               </Trans>
                             </AutoRow>
                           )}
