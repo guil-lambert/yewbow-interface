@@ -702,7 +702,7 @@ export function PositionPage({
       ? tickX * parseFloat(ETHprice ? ETHprice.toFixed(2) : '1')
       : tickY * parseFloat(ETHprice ? ETHprice.toFixed(2) : '1')
   const dayData = currentPosition != 0 ? currentPosition[0].pool.poolDayData : 0
-  const volumeUSD = dayData != 0 ? dayData[0].volumeUSD : 1  
+  const volumeUSD = dayData != 0 ? dayData[0].volumeUSD : 1
   const volatility =
     currentPosition != 0 ? (2 * currentPosition[0].pool.feeTier * ((365 * volumeUSD) / tickTVL) ** 0.5) / 1000000 : 0
   const nPt = 72
