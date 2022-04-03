@@ -25,6 +25,7 @@ import useUSDCPrice from 'hooks/useUSDCPrice'
 import { useV3PositionFees } from 'hooks/useV3PositionFees'
 import { useAllPositions, useV3PositionFromTokenId } from 'hooks/useV3Positions'
 import { useActiveWeb3React } from 'hooks/web3'
+import { erf, log } from 'mathjs'
 import React, { useCallback, useMemo, useState } from 'react'
 import ReactGA from 'react-ga'
 import { Link, RouteComponentProps } from 'react-router-dom'
@@ -438,6 +439,8 @@ export function PositionPage({
     return amount0.add(amount1)
   }, [price0, price1, position])
 
+  const fiatValueOfPosition =
+    price0 && price1 && position ? price0.quote(position.amount0).add(price1.quote(position.amount1)) : 0
   const collect = useCallback(() => {
     if (!chainId || !feeValue0 || !feeValue1 || !positionManager || !account || !tokenId || !library) return
 
@@ -705,6 +708,15 @@ export function PositionPage({
   const volumeUSD = dayData != 0 ? dayData[0].volumeUSD : 1
   const volatility =
     currentPosition != 0 ? (2 * currentPosition[0].pool.feeTier * ((365 * volumeUSD) / tickTVL) ** 0.5) / 1000000 : 0
+  const dte = (((2 * 3.1416) / volatility ** 2) * (r ** 0.5 - 1) ** 2) / (r ** 0.5 + 1) ** 2
+  const d1 = (log(Pc / strike) + (dte / 2) * volatility ** 2) / (volatility * dte ** 0.5)
+  const d2 = (log(Pc / strike) - (dte / 2) * volatility ** 2) / (volatility * dte ** 0.5)
+  const optionValue = Pc / 2 + (Pc * erf(d1 / 2 ** 0.5)) / 2 - strike / 2 - (strike * erf(d2 / 2 ** 0.5)) / 2
+  const expectedReturns = optionValue / Pc
+  const expectedReturnsUSD = (amountDepositedUSD * optionValue) / Pc
+  const calculatedReturns = parseFloat(amountDepositedUSD) + expectedReturnsUSD
+  const returnColor = fiatValueOfPosition.toFixed(2) > calculatedReturns.toFixed(2) ? theme.green1 : theme.red1
+  const delta = 0.5 - 0.5 * erf(d1 / 2 ** 0.5) - shortAmount
   const nPt = 72
   const dataPayoff: any[] = []
   const dataPayoffX: any[] = []
@@ -884,12 +896,8 @@ export function PositionPage({
                     <Trans>{new Percent(feeAmount, 1_000_000).toSignificant()}%</Trans>
                   </BadgeText>
                 </Badge>
-                <Badge style={{ marginRight: '8px' }}>
-                  <BadgeText>
-                    <Trans>Volatility: {(volatility * 100).toFixed(1)}%</Trans>
-                  </BadgeText>
-                </Badge>
                 <RangeBadge removed={removed} inRange={inRange} aboveRange={!above} belowRange={!below} />
+                Volatility: {(100 * volatility).toFixed(0)}%
               </RowFixed>
             </ResponsiveRow>
             <RowBetween></RowBetween>
@@ -1260,6 +1268,41 @@ export function PositionPage({
               </DarkCard>
             </AutoColumn>
           </ResponsiveRow>
+          <DarkCard style={{ marginLeft: '0px' }} padding="15px" width="100%">
+            <ResponsiveRow>
+              <Label display="flex" style={{ marginRight: '12px', marginBottom: '12px' }}>
+                <Trans>Options stats</Trans>
+              </Label>
+            </ResponsiveRow>
+            <LightCard style={{ marginLeft: '0px' }} padding="10px" width="100%">
+              <ResponsiveRow>
+                <RowFixed>
+                  <Trans>
+                    <b>Volatility:</b>
+                    {'\xa0' + (volatility * 100).toFixed(0)}%
+                  </Trans>
+                </RowFixed>
+                <RowFixed>
+                  <Trans>
+                    <b>Expected Return: </b>{' '}
+                    <TYPE.main color={returnColor}>
+                      {'\xa0' + expectedReturnsUSD.toFixed(2)}$ ({(100 * expectedReturns).toFixed(2)}%)
+                    </TYPE.main>
+                  </Trans>
+                </RowFixed>
+                <RowFixed>
+                  <Trans>
+                    <b>Effective DTE: </b> {'\xa0' + (dte * 365).toFixed(1)}
+                  </Trans>
+                </RowFixed>
+                <RowFixed>
+                  <Trans>
+                    <b>Position delta: </b> {'\xa0' + (100 * delta).toFixed(0)}
+                  </Trans>
+                </RowFixed>
+              </ResponsiveRow>
+            </LightCard>
+          </DarkCard>
           <DarkCard>
             <AutoColumn gap="md">
               <RowBetween>

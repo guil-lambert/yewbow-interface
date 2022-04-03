@@ -1,27 +1,23 @@
 import { Trans } from '@lingui/macro'
 import useScrollPosition from '@react-hook/window-scroll'
+import { ButtonSecondary } from 'components/Button'
 import { CHAIN_INFO, SupportedChainId } from 'constants/chains'
 import useTheme from 'hooks/useTheme'
 import { darken } from 'polished'
 import { useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { Text } from 'rebass'
-import { useShowClaimPopup, useToggleSelfClaimModal } from 'state/application/hooks'
-import { useUserHasAvailableClaim } from 'state/claim/hooks'
-import { useUserHasSubmittedClaim } from 'state/transactions/hooks'
 import { useDarkModeManager } from 'state/user/hooks'
 import { useETHBalances } from 'state/wallet/hooks'
 import styled from 'styled-components/macro'
 
 import { ReactComponent as Logo } from '../../assets/svg/logo.svg'
 import { useActiveWeb3React } from '../../hooks/web3'
-import { ExternalLink, TYPE } from '../../theme'
+import { ExternalLink } from '../../theme'
 import ClaimModal from '../claim/ClaimModal'
-import { CardNoise } from '../earn/styled'
 import Menu from '../Menu'
 import Modal from '../Modal'
 import Row from '../Row'
-import { Dots } from '../swap/styleds'
 import Web3Status from '../Web3Status'
 import NetworkSelector from './NetworkSelector'
 import UniBalanceContent from './UniBalanceContent'
@@ -133,27 +129,14 @@ const AccountElement = styled.div<{ active: boolean }>`
   }
 `
 
-const UNIAmount = styled(AccountElement)`
-  color: white;
-  padding: 4px 8px;
-  height: 36px;
-  font-weight: 500;
-  background-color: ${({ theme }) => theme.bg3};
-  background: radial-gradient(174.47% 188.91% at 1.84% 0%, #ff007a 0%, #2172e5 100%), #edeef2;
-`
-
-const UNIWrapper = styled.span`
+const ResponsiveButtonPrimary = styled(ButtonSecondary)`
+  border-radius: 4px;
+  padding: 6px 8px;
   width: fit-content;
-  position: relative;
-  cursor: pointer;
-
-  :hover {
-    opacity: 0.8;
-  }
-
-  :active {
-    opacity: 0.9;
-  }
+  ${({ theme }) => theme.mediaWidth.upToSmall`
+    flex: 1 1 auto;
+    width: 100%;
+  `};
 `
 
 const BalanceText = styled(Text)`
@@ -250,14 +233,7 @@ export default function Header() {
   const [darkMode] = useDarkModeManager()
   const { white, black } = useTheme()
 
-  const toggleClaimModal = useToggleSelfClaimModal()
-
-  const availableClaim: boolean = useUserHasAvailableClaim(account)
-
-  const { claimTxn } = useUserHasSubmittedClaim(account ?? undefined)
-
   const [showUniBalanceModal, setShowUniBalanceModal] = useState(false)
-  const showClaimPopup = useShowClaimPopup()
 
   const scrollY = useScrollPosition()
 
@@ -298,25 +274,14 @@ export default function Header() {
 
       <HeaderControls>
         <HeaderElement>
+          <ResponsiveButtonPrimary id="join-pool-button" as={Link} to="/add/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2">
+            +
+          </ResponsiveButtonPrimary>
+        </HeaderElement>
+        <HeaderElement>
           <NetworkSelector />
         </HeaderElement>
         <HeaderElement>
-          {availableClaim && !showClaimPopup && (
-            <UNIWrapper onClick={toggleClaimModal}>
-              <UNIAmount active={!!account && !availableClaim} style={{ pointerEvents: 'auto' }}>
-                <TYPE.white padding="0 2px">
-                  {claimTxn && !claimTxn?.receipt ? (
-                    <Dots>
-                      <Trans>Claiming UNI</Trans>
-                    </Dots>
-                  ) : (
-                    <Trans>Claim UNI</Trans>
-                  )}
-                </TYPE.white>
-              </UNIAmount>
-              <CardNoise />
-            </UNIWrapper>
-          )}
           <AccountElement active={!!account}>
             {account && userEthBalance ? (
               <BalanceText style={{ flexShrink: 0, userSelect: 'none' }} pl="0.75rem" pr="0.5rem" fontWeight={500}>

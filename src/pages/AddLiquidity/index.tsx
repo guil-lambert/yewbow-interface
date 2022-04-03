@@ -150,12 +150,6 @@ export default function AddLiquidity({
   const isValid = !errorMessage && !invalidRange
 
   const currentPosition = poolPositions.positions ? poolPositions.positions : 0
-  const currencyETH =
-    baseCurrency && quoteCurrency && chainId
-      ? baseCurrency == WETH9_EXTENDED[chainId]
-        ? baseCurrency
-        : quoteCurrency
-      : quoteCurrency
   const ETHprice = useUSDCPrice(WETH9_EXTENDED[1] ?? undefined)
   const tickX =
     currentPosition != 0
