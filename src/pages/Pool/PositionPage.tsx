@@ -953,7 +953,7 @@ export function PositionPage({
                     <ReferenceArea
                       x1={Pa}
                       x2={Pb}
-                      y1={-Math.abs(Math.min(...dataPayoffY)) * 1.5}
+                      y1={-Math.abs(Math.min(...dataPayoffY))}
                       y2={Math.abs(Math.max(...dataPayoffY)) * 2}
                       fillOpacity={0.15}
                       fill={inRange ? '#47b247' : '#cc333f'}
@@ -991,8 +991,8 @@ export function PositionPage({
                     <ReferenceArea
                       x1={Pmin}
                       x2={Pmax}
-                      y1={removed ? -1 : -Math.abs(Math.min(...dataPayoffY)) * 1.5}
-                      y2={removed ? 1 : -Math.abs(Math.min(...dataPayoffY)) * 1.25}
+                      y1={removed ? -1 : -Math.abs(Math.min(...dataPayoffY)) * 1}
+                      y2={removed ? 1 : -Math.abs(Math.min(...dataPayoffY)) * 0.8}
                       fillOpacity={100}
                       fill={'#fff'}
                       label={removed ? 'Profit: ' + profit.toPrecision(6) + ' USD' : profit.toPrecision(6)}
@@ -1019,14 +1019,10 @@ export function PositionPage({
                       tick={{ fontSize: 10 }}
                       allowDecimals={false}
                       interval={0}
-                      ticks={[
-                        0,
-                        dataPc[0].y,
-                        (dE * strike + feeValueETH + feeValueToken * Pb - baseValue).toPrecision(3),
-                      ]}
+                      ticks={[0, dataPc[0].y, Math.max(...dataPayoffY)]}
                       dataKey="y"
                       domain={[
-                        removed ? -1 : -Math.abs(Math.min(...dataPayoffY)) * 1.5,
+                        removed ? -1 : -Math.abs(Math.min(...dataPayoffY)),
                         removed ? 1 : Math.max(...dataPayoffY) * 2,
                       ]}
                       label={{ value: 'Profit/Loss', angle: -90, position: 'insideLeft', offset: 5 }}
