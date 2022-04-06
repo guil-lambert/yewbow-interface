@@ -645,8 +645,8 @@ export function PositionPage({
       ? dE * startPrice
       : (dE * (2 * (strike * Pb * r) ** 0.5 - strike - Pb)) / (r - 1)
   //const BE = (feeValueTotal * (1 - r)) / dE + strike * (-2 * r ** 0.5 + 2 * r)
-  const Pmin = Pc < Pa - dp ? Pc * 0.9 : Pc > Pb + dp ? Pa * 0.9 - (Pc - Pb) : Pa * 0.9 - dp
-  const Pmax = Pc > Pb + dp ? Pc * 1.1 : Pc < Pa - dp ? Pb * 1.1 + (Pa - Pc) : Pb * 1.1 + dp
+  const Pmin = Pc < Pa - dp ? Pc * 0.75 : Pc > Pb + dp ? Pa * 0.75 - (Pc - Pb) : Pa * 0.75 - dp
+  const Pmax = Pc > Pb + dp ? Pc * 1.33 : Pc < Pa - dp ? Pb * 1.33 + (Pa - Pc) : Pb * 1.33 + dp
   const profit = removed
     ? amountCollectedUSD - amountDepositedUSD
     : Pc < Pb && Pc > Pa
