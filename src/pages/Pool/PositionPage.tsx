@@ -27,6 +27,7 @@ import { useAllPositions, useV3PositionFromTokenId } from 'hooks/useV3Positions'
 import { useActiveWeb3React } from 'hooks/web3'
 import { erf, log } from 'mathjs'
 import React, { useCallback, useMemo, useState } from 'react'
+import Collapsible from 'react-collapsible'
 import ReactGA from 'react-ga'
 import { Link, RouteComponentProps } from 'react-router-dom'
 import {
@@ -1270,34 +1271,36 @@ export function PositionPage({
                 <Trans>Options stats</Trans>
               </Label>
             </ResponsiveRow>
-            <LightCard style={{ marginLeft: '0px' }} padding="10px" width="100%">
-              <ResponsiveRow>
-                <RowFixed>
-                  <Trans>
-                    <b>Volatility:</b>
-                    {'\xa0' + (volatility * 100).toFixed(0)}%
-                  </Trans>
-                </RowFixed>
-                <RowFixed>
-                  <Trans>
-                    <b>Expected Return: </b>{' '}
-                    <TYPE.main color={returnColor}>
-                      {'\xa0' + expectedReturnsUSD.toFixed(2)}$ ({(100 * expectedReturns).toFixed(2)}%)
-                    </TYPE.main>
-                  </Trans>
-                </RowFixed>
-                <RowFixed>
-                  <Trans>
-                    <b>Effective DTE: </b> {'\xa0' + (dte * 365).toFixed(1)}
-                  </Trans>
-                </RowFixed>
-                <RowFixed>
-                  <Trans>
-                    <b>Position delta: </b> {'\xa0' + (100 * delta).toFixed(0)}
-                  </Trans>
-                </RowFixed>
-              </ResponsiveRow>
-            </LightCard>
+            <Collapsible trigger="+ Click to expand" triggerWhenOpen="">
+              <LightCard style={{ marginLeft: '0px' }} padding="10px" width="100%">
+                <ResponsiveRow>
+                  <RowFixed>
+                    <Trans>
+                      <b>Volatility:</b>
+                      {'\xa0' + (volatility * 100).toFixed(0)}%
+                    </Trans>
+                  </RowFixed>
+                  <RowFixed>
+                    <Trans>
+                      <b>Expected Return: </b>{' '}
+                      <TYPE.main color={returnColor}>
+                        {'\xa0' + expectedReturnsUSD.toFixed(2)}$ ({(100 * expectedReturns).toFixed(2)}%)
+                      </TYPE.main>
+                    </Trans>
+                  </RowFixed>
+                  <RowFixed>
+                    <Trans>
+                      <b>Effective DTE: </b> {'\xa0' + (dte * 365).toFixed(1)}
+                    </Trans>
+                  </RowFixed>
+                  <RowFixed>
+                    <Trans>
+                      <b>Position delta: </b> {'\xa0' + (100 * delta).toFixed(0)}
+                    </Trans>
+                  </RowFixed>
+                </ResponsiveRow>
+              </LightCard>
+            </Collapsible>
           </DarkCard>
           <DarkCard>
             <AutoColumn gap="md">
