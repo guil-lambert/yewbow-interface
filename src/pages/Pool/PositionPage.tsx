@@ -11,12 +11,11 @@ import Confetti from 'components/Confetti'
 import CurrencyLogo from 'components/CurrencyLogo'
 import DoubleCurrencyLogo from 'components/DoubleLogo'
 import Loader from 'components/Loader'
-import { RowBetween, RowFixed } from 'components/Row'
+import { AutoRow, RowBetween, RowFixed } from 'components/Row'
 import { Dots } from 'components/swap/styleds'
 import Toggle from 'components/Toggle'
 import TransactionConfirmationModal, { ConfirmationModalContent } from 'components/TransactionConfirmationModal'
 import { SupportedChainId } from 'constants/chains'
-//import { erf } from 'extra-math'
 import { useToken } from 'hooks/Tokens'
 import { useV3NFTPositionManagerContract } from 'hooks/useContract'
 import useIsTickAtLimit from 'hooks/useIsTickAtLimit'
@@ -627,7 +626,7 @@ export function PositionPage({
   const startPrice = startPriceInit > 10 ** 24 ? Pa : startPriceInit
   const startRatio = 1 - (((strike * r) / startPrice) ** 0.5 - 1) / (r - 1)
   //const shortAmount = 0.5 // Fraction of the position that is shorted, in fraction of total liquidity (0,1)
-  const shortAmount = Number(radioState) // Fraction of the position that is shorted, in fraction of total liquidity (0,1)
+  const shortAmount = radioState ? Number(radioState) : 0 // Fraction of the position that is shorted, in fraction of total liquidity (0,1)
   const dL = position
     ? Pc > Pa && Pc < Pb
       ? amtETH / (Pc ** 0.5 - Pa ** 0.5)
@@ -710,14 +709,14 @@ export function PositionPage({
   const volatility =
     currentPosition != 0 ? (2 * currentPosition[0].pool.feeTier * ((365 * volumeUSD) / tickTVL) ** 0.5) / 1000000 : 0
   const dte = (((2 * 3.1416) / volatility ** 2) * (r ** 0.5 - 1) ** 2) / (r ** 0.5 + 1) ** 2
-  const d1 = (log(Pc / strike) + (dte / 2) * volatility ** 2) / (volatility * dte ** 0.5)
-  const d2 = (log(Pc / strike) - (dte / 2) * volatility ** 2) / (volatility * dte ** 0.5)
+  const d1 = log(Pc / strike) / (volatility * dte ** 0.5) + (dte * volatility ** 2) / (2 * volatility * dte ** 0.5)
+  const d2 = log(Pc / strike) / (volatility * dte ** 0.5) - (dte * volatility ** 2) / (2 * volatility * dte ** 0.5)
+  const delta = 0.5 - 0.5 * erf(d1 / 2 ** 0.5) - shortAmount
   const optionValue = Pc / 2 + (Pc * erf(d1 / 2 ** 0.5)) / 2 - strike / 2 - (strike * erf(d2 / 2 ** 0.5)) / 2
   const expectedReturns = optionValue / Pc
   const expectedReturnsUSD = (amountDepositedUSD * optionValue) / Pc
   const calculatedReturns = parseFloat(amountDepositedUSD) + expectedReturnsUSD
   const returnColor = fiatValueOfPosition.toFixed(2) > calculatedReturns.toFixed(2) ? theme.green1 : theme.red1
-  const delta = 0.5 - 0.5 * erf(d1 / 2 ** 0.5) - shortAmount
   const nPt = 72
   const dataPayoff: any[] = []
   const dataPayoffX: any[] = []
@@ -743,8 +742,13 @@ export function PositionPage({
   const dPXr = dataPayoffX.slice().reverse()
   const dPYr = dataPayoffY.slice().reverse()
   const breakEven0 = dataPayoffY[0] < 0 ? dataPayoffX[dataPayoffY.findIndex((obj) => obj > 0)] : 0
+  const breakEven1 = dPYr[0] < 0 ? dPXr[dPYr.findIndex((obj) => obj > 0)] : 10 * Pb
 
-  const breakEven1 = dPYr[0] < 0 ? dPXr[dPYr.findIndex((obj) => obj > 0)] : Pb
+  const dte7 = 7 / 365
+  const PoP =
+    (-erf((volatility ** 2 * dte7 + 2 * log(breakEven0 / Pc)) / (2 * 1.5 * volatility * dte7 ** 0.5)) +
+      erf((volatility ** 2 * dte7 + 2 * log(breakEven1 / Pc)) / (2 * 1.5 * volatility * dte7 ** 0.5))) /
+    2
 
   const dataPc = [
     {
@@ -782,7 +786,7 @@ export function PositionPage({
     },
     {
       label: 'BE',
-      x: breakEven1 == 0 && breakEven0 != 0 ? breakEven0 : breakEven1 != 0 ? breakEven1 : Pb,
+      x: breakEven1 == 0 && breakEven0 != 0 ? breakEven0 : breakEven1 < 9 * Pb ? breakEven1 : Pb,
       y: 0,
       z: 7.5,
     },
@@ -970,7 +974,7 @@ export function PositionPage({
                         style={{ fontSize: '12px' }}
                       />
                     </Scatter>
-                    <Scatter data={dataPe} shape="cross">
+                    <Scatter data={removed ? undefined : dataPe} shape="cross">
                       <LabelList
                         position="insideBottomRight"
                         offset="10"
@@ -1271,36 +1275,38 @@ export function PositionPage({
                 <Trans>Options stats</Trans>
               </Label>
             </ResponsiveRow>
-            <Collapsible trigger="+ Click to expand" triggerWhenOpen="">
-              <LightCard style={{ marginLeft: '0px' }} padding="10px" width="100%">
-                <ResponsiveRow>
-                  <RowFixed>
-                    <Trans>
-                      <b>Volatility:</b>
-                      {'\xa0' + (volatility * 100).toFixed(0)}%
-                    </Trans>
-                  </RowFixed>
-                  <RowFixed>
-                    <Trans>
-                      <b>Expected Return: </b>{' '}
-                      <TYPE.main color={returnColor}>
-                        {'\xa0' + expectedReturnsUSD.toFixed(2)}$ ({(100 * expectedReturns).toFixed(2)}%)
-                      </TYPE.main>
-                    </Trans>
-                  </RowFixed>
-                  <RowFixed>
-                    <Trans>
-                      <b>Effective DTE: </b> {'\xa0' + (dte * 365).toFixed(1)}
-                    </Trans>
-                  </RowFixed>
-                  <RowFixed>
-                    <Trans>
-                      <b>Position delta: </b> {'\xa0' + (100 * delta).toFixed(0)}
-                    </Trans>
-                  </RowFixed>
-                </ResponsiveRow>
-              </LightCard>
-            </Collapsible>
+            <div style={{ cursor: 'pointer' }}>
+              <Collapsible trigger="+ Click to expand" triggerWhenOpen="">
+                <LightCard style={{ marginLeft: '0px' }} padding="10px" width="100%">
+                  <ResponsiveRow>
+                    <RowFixed>
+                      <Trans>
+                        <b>Volatility:</b>
+                        {'\xa0' + (volatility * 100).toFixed(0)}%
+                      </Trans>
+                    </RowFixed>
+                    <RowFixed>
+                      <Trans>
+                        <b>Expected Return: </b>{' '}
+                        <TYPE.main color={returnColor}>
+                          {'\xa0' + expectedReturnsUSD.toFixed(2)}$ ({(100 * expectedReturns).toFixed(2)}%)
+                        </TYPE.main>
+                      </Trans>
+                    </RowFixed>
+                    <RowFixed>
+                      <Trans>
+                        <b>delta: </b> {'\xa0' + (delta * 100).toFixed(0)}
+                      </Trans>
+                    </RowFixed>
+                    <RowFixed>
+                      <Trans>
+                        <b>7d PoP: </b> {'\xa0' + (PoP * 100).toFixed(0)}%
+                      </Trans>
+                    </RowFixed>
+                  </ResponsiveRow>
+                </LightCard>
+              </Collapsible>
+            </div>
           </DarkCard>
           <DarkCard>
             <AutoColumn gap="md">
