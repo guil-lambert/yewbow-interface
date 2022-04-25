@@ -11,7 +11,7 @@ import Confetti from 'components/Confetti'
 import CurrencyLogo from 'components/CurrencyLogo'
 import DoubleCurrencyLogo from 'components/DoubleLogo'
 import Loader from 'components/Loader'
-import { AutoRow, RowBetween, RowFixed } from 'components/Row'
+import { RowBetween, RowFixed } from 'components/Row'
 import { Dots } from 'components/swap/styleds'
 import Toggle from 'components/Toggle'
 import TransactionConfirmationModal, { ConfirmationModalContent } from 'components/TransactionConfirmationModal'
@@ -645,8 +645,8 @@ export function PositionPage({
       ? dE * startPrice
       : (dE * (2 * (strike * Pb * r) ** 0.5 - strike - Pb)) / (r - 1)
   //const BE = (feeValueTotal * (1 - r)) / dE + strike * (-2 * r ** 0.5 + 2 * r)
-  const Pmin = Pc < Pa - dp ? Pc * 0.75 : Pc > Pb + dp ? Pa * 0.75 - (Pc - Pb) : Pa * 0.75 - dp
-  const Pmax = Pc > Pb + dp ? Pc * 1.33 : Pc < Pa - dp ? Pb * 1.33 + (Pa - Pc) : Pb * 1.33 + dp
+  const Pmin = Pc < Pa - dp ? Pc * 0.25 : Pc > Pb + dp ? Pa * 0.25 - (Pc - Pb) : Pa * 0.25 - dp
+  const Pmax = Pc > Pb + dp ? Pc * 4 : Pc < Pa - dp ? Pb * 4 + (Pa - Pc) : Pb * 4 + dp
   const profit = removed
     ? amountCollectedUSD - amountDepositedUSD
     : Pc < Pb && Pc > Pa
@@ -709,9 +709,13 @@ export function PositionPage({
   const volatility =
     currentPosition != 0 ? (2 * currentPosition[0].pool.feeTier * ((365 * volumeUSD) / tickTVL) ** 0.5) / 1000000 : 0
   const dte = (((2 * 3.1416) / volatility ** 2) * (r ** 0.5 - 1) ** 2) / (r ** 0.5 + 1) ** 2
-  const d1 = log(Pc / strike) / (volatility * dte ** 0.5) + (dte * volatility ** 2) / (2 * volatility * dte ** 0.5)
-  const d2 = log(Pc / strike) / (volatility * dte ** 0.5) - (dte * volatility ** 2) / (2 * volatility * dte ** 0.5)
-  const delta = 0.5 - 0.5 * erf(d1 / 2 ** 0.5) - shortAmount
+  const d1log = log(Pc / strike) / (volatility * dte ** 0.5)
+  const d1const = volatility * dte ** 0.5
+  const d1 = d1log + d1const
+  const d2log = log(Pc / strike) / (volatility * dte ** 0.5)
+  const d2const = volatility * dte ** 0.5
+  const d2 = d2log - d2const
+  const delta = d1 ? 0.5 - 0.5 * erf(d1 / 2 ** 0.5) - shortAmount : 0
   const optionValue = Pc / 2 + (Pc * erf(d1 / 2 ** 0.5)) / 2 - strike / 2 - (strike * erf(d2 / 2 ** 0.5)) / 2
   const expectedReturns = optionValue / Pc
   const expectedReturnsUSD = (amountDepositedUSD * optionValue) / Pc
@@ -722,7 +726,7 @@ export function PositionPage({
   const dataPayoffX: any[] = []
   const dataPayoffY: any[] = []
   for (let pt = 0; pt <= nPt; pt++) {
-    const xx = ((Pmax - Pmin) * pt) / nPt + Pmin
+    const xx = ((Pb * r - Pa / r ** 2) * pt) / nPt + Pa / r ** 2
     const yy =
       xx < Pa
         ? dE * xx + feeValueETH + feeValueToken * xx - baseValue - dE * shortAmount * (xx - startPrice)
@@ -744,10 +748,10 @@ export function PositionPage({
   const breakEven0 = dataPayoffY[0] < 0 ? dataPayoffX[dataPayoffY.findIndex((obj) => obj > 0)] : 0
   const breakEven1 = dPYr[0] < 0 ? dPXr[dPYr.findIndex((obj) => obj > 0)] : 10 * Pb
 
-  const dte7 = 7 / 365
+  const dte28 = 28 / 365
   const PoP =
-    (-erf((volatility ** 2 * dte7 + 2 * log(breakEven0 / Pc)) / (2 * 1.5 * volatility * dte7 ** 0.5)) +
-      erf((volatility ** 2 * dte7 + 2 * log(breakEven1 / Pc)) / (2 * 1.5 * volatility * dte7 ** 0.5))) /
+    (-erf((volatility ** 2 * dte28 + 2 * log(breakEven0 / Pc)) / (2 ** 1.5 * volatility * dte28 ** 0.5)) +
+      erf((volatility ** 2 * dte28 + 2 * log(breakEven1 / Pc)) / (2 ** 1.5 * volatility * dte28 ** 0.5))) /
     2
 
   const dataPc = [
@@ -820,7 +824,6 @@ export function PositionPage({
         ]
 
   const off = gradientOffset()
-
   function modalHeader() {
     return (
       <AutoColumn gap={'md'} style={{ marginTop: '20px' }}>
@@ -958,7 +961,7 @@ export function PositionPage({
                     <ReferenceArea
                       x1={Pa}
                       x2={Pb}
-                      y1={-Math.abs(Math.min(...dataPayoffY))}
+                      y1={-Math.max(...dataPayoffY) * 3}
                       y2={Math.abs(Math.max(...dataPayoffY)) * 2}
                       fillOpacity={0.15}
                       fill={inRange ? '#47b247' : '#cc333f'}
@@ -1007,6 +1010,7 @@ export function PositionPage({
                       name="Price"
                       textAnchor="end"
                       interval={0}
+                      allowDataOverflow={true}
                       angle={-45}
                       tick={{ fontSize: 10 }}
                       ticks={[
@@ -1016,7 +1020,7 @@ export function PositionPage({
                         Number(breakEven0).toPrecision(3),
                         Number(breakEven1).toPrecision(3),
                       ]}
-                      domain={[Pmin, Pmax]}
+                      domain={[Pa / r ** 2, Pb * r]}
                       type="number"
                       label={{ value: 'Price', position: 'insideBottomRight', offset: 0 }}
                     />
@@ -1024,10 +1028,11 @@ export function PositionPage({
                       tick={{ fontSize: 10 }}
                       allowDecimals={false}
                       interval={0}
+                      allowDataOverflow={true}
                       ticks={[0, dataPc[0].y, Math.max(...dataPayoffY)]}
                       dataKey="y"
                       domain={[
-                        removed ? -1 : -Math.abs(Math.min(...dataPayoffY)),
+                        removed ? -1 : -Math.max(...dataPayoffY) * 3,
                         removed ? 1 : Math.max(...dataPayoffY) * 2,
                       ]}
                       label={{ value: 'Profit/Loss', angle: -90, position: 'insideLeft', offset: 5 }}
@@ -1294,14 +1299,10 @@ export function PositionPage({
                       </Trans>
                     </RowFixed>
                     <RowFixed>
-                      <Trans>
-                        <b>delta: </b> {'\xa0' + (delta * 100).toFixed(0)}
-                      </Trans>
+                      <b>delta: </b> {'\xa0' + (delta * 100).toFixed(0)}
                     </RowFixed>
                     <RowFixed>
-                      <Trans>
-                        <b>7d PoP: </b> {'\xa0' + (PoP * 100).toFixed(0)}%
-                      </Trans>
+                      <b>28d PoP: </b> {'\xa0' + (PoP * 100).toFixed(0)}%
                     </RowFixed>
                   </ResponsiveRow>
                 </LightCard>
