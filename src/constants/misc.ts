@@ -2,6 +2,7 @@ import { Percent } from '@uniswap/sdk-core'
 import JSBI from 'jsbi'
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+export const ONE_ADDRESS = '0x1111111111111111111111111111111111111111'
 
 export const NetworkContextName = 'NETWORK'
 
