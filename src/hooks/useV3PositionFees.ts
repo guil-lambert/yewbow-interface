@@ -1,9 +1,9 @@
 import { BigNumber } from '@ethersproject/bignumber'
 import { Currency, CurrencyAmount } from '@uniswap/sdk-core'
 import { Pool } from '@uniswap/v3-sdk'
+import { ZERO_ADDRESS } from 'constants/misc'
 import { useEffect, useState } from 'react'
 import { useBlockNumber } from 'state/application/hooks'
-import { useSingleCallResult } from 'state/multicall/hooks'
 import { unwrappedToken } from 'utils/unwrappedToken'
 
 import { useV3NFTPositionManagerContract } from './useContract'
@@ -17,8 +17,6 @@ export function useV3PositionFees(
   asWETH = false
 ): [CurrencyAmount<Currency>, CurrencyAmount<Currency>] | [undefined, undefined] {
   const positionManager = useV3NFTPositionManagerContract(false)
-  const owner: string | undefined = useSingleCallResult(tokenId ? positionManager : null, 'ownerOf', [tokenId])
-    .result?.[0]
 
   const tokenIdHexString = tokenId?.toHexString()
   const latestBlockNumber = useBlockNumber()
@@ -29,16 +27,16 @@ export function useV3PositionFees(
   useEffect(() => {
     let stale = false
 
-    if (positionManager && tokenIdHexString && owner && typeof latestBlockNumber === 'number') {
+    if (positionManager && tokenIdHexString && typeof latestBlockNumber === 'number') {
       positionManager.callStatic
         .collect(
           {
             tokenId: tokenIdHexString,
-            recipient: owner, // some tokens might fail if transferred to address(0)
+            recipient: ZERO_ADDRESS, // some tokens might fail if transferred to address(0)
             amount0Max: MAX_UINT128,
             amount1Max: MAX_UINT128,
           },
-          { from: owner } // need to simulate the call as the owner
+          { from: ZERO_ADDRESS } // need to simulate the call as the owner
         )
         .then((results) => {
           if (!stale) setAmounts([results.amount0, results.amount1])
@@ -48,7 +46,7 @@ export function useV3PositionFees(
     return () => {
       stale = true
     }
-  }, [positionManager, tokenIdHexString, owner, latestBlockNumber])
+  }, [positionManager, tokenIdHexString, latestBlockNumber])
 
   if (pool && amounts) {
     return [
