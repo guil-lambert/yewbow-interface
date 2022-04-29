@@ -55,6 +55,9 @@ export const api = createApi({
               collectedFeesToken1
               feeGrowthInside0LastX128
               feeGrowthInside1LastX128
+              transaction {
+                timestamp
+              }
               tickLower {
                 tickIdx
                 feeGrowthOutside0X128
@@ -71,8 +74,11 @@ export const api = createApi({
                 tick
                 liquidity
                 feeTier
-                poolDayData(first: 1, skip: 1, orderBy: date, orderDirection: desc) {
+                poolDayData(first: 672, skip: 1, orderBy: date, orderDirection: desc) {
                   volumeUSD
+                  date
+                  token0Price
+                  token1Price
                 }
               }
               token0 {

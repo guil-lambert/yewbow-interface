@@ -33,6 +33,8 @@ import {
   Area,
   ComposedChart,
   LabelList,
+  Line,
+  LineChart,
   ReferenceArea,
   ReferenceLine,
   Scatter,
@@ -645,8 +647,8 @@ export function PositionPage({
       ? dE * startPrice
       : (dE * (2 * (strike * Pb * r) ** 0.5 - strike - Pb)) / (r - 1)
   //const BE = (feeValueTotal * (1 - r)) / dE + strike * (-2 * r ** 0.5 + 2 * r)
-  const Pmin = Pc < Pa - dp ? Pc * 0.25 : Pc > Pb + dp ? Pa * 0.25 - (Pc - Pb) : Pa * 0.25 - dp
-  const Pmax = Pc > Pb + dp ? Pc * 4 : Pc < Pa - dp ? Pb * 4 + (Pa - Pc) : Pb * 4 + dp
+  const Pmin = Pc < Pa - dp ? Pc * 0.75 : Pc > Pb + dp ? Pa * 0.75 - (Pc - Pb) : Pa * 0.75 - dp
+  const Pmax = Pc > Pb + dp ? Pc * 1.33 : Pc < Pa - dp ? Pb * 1.33 + (Pa - Pc) : Pb * 1.33 + dp
   const profit = removed
     ? amountCollectedUSD - amountDepositedUSD
     : Pc < Pb && Pc > Pa
@@ -704,7 +706,24 @@ export function PositionPage({
     token0 == currencyETH
       ? tickX * parseFloat(ETHprice ? ETHprice.toFixed(2) : '1')
       : tickY * parseFloat(ETHprice ? ETHprice.toFixed(2) : '1')
+
+  const startDate = currentPosition != 0 ? currentPosition[0].transaction.timestamp : undefined
+  const endDate = currentPosition != 0 ? currentPosition[0].pool.poolDayData[0].date : undefined
+
   const dayData = currentPosition != 0 ? currentPosition[0].pool.poolDayData : 0
+  const dayData0 =
+    currentPosition != 0 ? currentPosition[0].pool.poolDayData : [{ date: 0, token0Price: 0, token1Price: 0 }]
+  const dayData1 =
+    dayData != 0
+      ? dayData.map((i) => {
+          return {
+            date: i.date,
+            price: token0 == currencyETH ? i.token0Price : i.token1Price,
+          }
+        })
+      : [{ date: 0, price: 0 }]
+  const startPoint = startPrice ? dayData1[dayData1.findIndex((obj) => obj.date > startDate)] : { date: 0, price: 1 }
+
   const volumeUSD = dayData != 0 ? dayData[0].volumeUSD : 1
   const volatility =
     currentPosition != 0 ? (2 * currentPosition[0].pool.feeTier * ((365 * volumeUSD) / tickTVL) ** 0.5) / 1000000 : 0
@@ -812,7 +831,7 @@ export function PositionPage({
     setradioState(e.currentTarget.value)
   }
   const shortOps =
-    Math.abs(Math.abs(startRatio - 0.5) - 0.5) < 0.01
+    Math.abs(Math.abs(startRatio - 0.5) - 0.5) < 0.01 // if position started OTM
       ? [
           { view: '0%', value: '0', checked: true },
           { view: '100%', value: '1', checked: false },
@@ -1039,8 +1058,8 @@ export function PositionPage({
                     />
                     <ZAxis type="number" dataKey="z" range={[1, 100]} />
                   </ComposedChart>
+                  <div>Hedge Amount:</div>
                   <div>
-                    Hedge Amount:
                     {shortOps.map(({ view: title, value: shortAmt }: any) => {
                       return (
                         <>
@@ -1303,6 +1322,34 @@ export function PositionPage({
                     </RowFixed>
                     <RowFixed>
                       <b>28d PoP: </b> {'\xa0' + (PoP * 100).toFixed(0)}%
+                    </RowFixed>
+                  </ResponsiveRow>
+                </LightCard>
+                <LightCard>
+                  <ResponsiveRow>
+                    <RowFixed>
+                      <ComposedChart width={700} height={200} data={dayData1}>
+                        <XAxis
+                          dataKey="date"
+                          ticks={[startDate - (startDate % 86400)]}
+                          reversed={true}
+                          allowDataOverflow={true}
+                        />
+                        <YAxis dataKey="price" domain={[0, Pb + Pa]} />
+                        <Line data={dayData1} dataKey="price" dot={false} color="#56B2A4" />
+                        <ReferenceArea
+                          x1={startDate - (startDate % 86400)}
+                          x2={endDate}
+                          y1={Pa}
+                          y2={Pb}
+                          fillOpacity={0.15}
+                          fill={'#47b247'}
+                        />
+                        <ReferenceLine x={startDate - (startDate % 86400)} stroke="#cc333f" />
+                        <ReferenceLine y={Pa} stroke="#000" strokeDasharray="3 5" />
+                        <ReferenceLine y={Pb} stroke="#000" strokeDasharray="3 5" />
+                        <Tooltip />
+                      </ComposedChart>
                     </RowFixed>
                   </ResponsiveRow>
                 </LightCard>
