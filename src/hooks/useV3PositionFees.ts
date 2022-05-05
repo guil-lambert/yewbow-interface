@@ -1,7 +1,7 @@
 import { BigNumber } from '@ethersproject/bignumber'
 import { Currency, CurrencyAmount } from '@uniswap/sdk-core'
 import { Pool } from '@uniswap/v3-sdk'
-import { ONE_ADDRESS } from 'constants/misc'
+import { ZERO_ADDRESS } from 'constants/misc'
 import { useEffect, useState } from 'react'
 import { useBlockNumber } from 'state/application/hooks'
 import { unwrappedToken } from 'utils/unwrappedToken'
@@ -32,11 +32,11 @@ export function useV3PositionFees(
         .collect(
           {
             tokenId: tokenIdHexString,
-            recipient: ONE_ADDRESS, // some tokens might fail if transferred to address(0)
+            recipient: ZERO_ADDRESS, // some tokens might fail if transferred to address(0)
             amount0Max: MAX_UINT128,
             amount1Max: MAX_UINT128,
           },
-          { from: ONE_ADDRESS } // need to simulate the call as the owner
+          { from: ZERO_ADDRESS } // need to simulate the call as the owner
         )
         .then((results) => {
           if (!stale) setAmounts([results.amount0, results.amount1])

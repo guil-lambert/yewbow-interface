@@ -422,7 +422,7 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
             Uncollected fees:
             <br />
             {''}
-            {''} {fg ? fg.toFixed(3) : '-'}
+            {''} {fg ? fg.toFixed(0) : '-'}
             {''} ETH (
             <Trans>
               {fg && yMax / Pc + xMax > 0

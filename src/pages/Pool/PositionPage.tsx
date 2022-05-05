@@ -34,7 +34,6 @@ import {
   ComposedChart,
   LabelList,
   Line,
-  LineChart,
   ReferenceArea,
   ReferenceLine,
   Scatter,
@@ -711,8 +710,6 @@ export function PositionPage({
   const endDate = currentPosition != 0 ? currentPosition[0].pool.poolDayData[0].date : undefined
 
   const dayData = currentPosition != 0 ? currentPosition[0].pool.poolDayData : 0
-  const dayData0 =
-    currentPosition != 0 ? currentPosition[0].pool.poolDayData : [{ date: 0, token0Price: 0, token1Price: 0 }]
   const dayData1 =
     dayData != 0
       ? dayData.map((i) => {
@@ -722,7 +719,6 @@ export function PositionPage({
           }
         })
       : [{ date: 0, price: 0 }]
-  const startPoint = startPrice ? dayData1[dayData1.findIndex((obj) => obj.date > startDate)] : { date: 0, price: 1 }
 
   const volumeUSD = dayData != 0 ? dayData[0].volumeUSD : 1
   const volatility =
