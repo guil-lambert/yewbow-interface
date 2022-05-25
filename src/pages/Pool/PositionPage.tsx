@@ -193,7 +193,7 @@ function CurrentPriceCard({
               </ExternalLink>
             </ExtentsText>
             <ExtentsText>
-              <ExternalLink href={'https://info.yewbow.org/#/pools/' + poolAddress}>
+              <ExternalLink href={'https://info.yewbow.org/#/pools/' + poolAddress.toLowerCase()}>
                 <Trans>Pool info</Trans>
               </ExternalLink>
             </ExtentsText>
