@@ -714,8 +714,11 @@ export function PositionPage({
     dayData != 0
       ? dayData.map((i) => {
           return {
-            date: i.date,
-            price: token0 == currencyETH ? i.token0Price : i.token1Price,
+            date: new Date(i.date * 1000).toLocaleDateString('en-US'),
+            price:
+              token0 == currencyETH
+                ? parseFloat(i.token0Price).toPrecision(4)
+                : parseFloat(i.token1Price).toPrecision(4),
           }
         })
       : [{ date: 0, price: 0 }]
@@ -1035,7 +1038,7 @@ export function PositionPage({
                         Number(breakEven0).toPrecision(3),
                         Number(breakEven1).toPrecision(3),
                       ]}
-                      domain={[Pa / r ** 2, Pb * r]}
+                      domain={[Math.min(Pa / r, Pc / r), Math.max(Pb * r, Pc * r)]}
                       type="number"
                       label={{ value: 'Price', position: 'insideBottomRight', offset: 0 }}
                     />
@@ -1312,6 +1315,9 @@ export function PositionPage({
                           {'\xa0' + expectedReturnsUSD.toFixed(2)}$ ({(100 * expectedReturns).toFixed(2)}%)
                         </TYPE.main>
                       </Trans>
+                    </RowFixed>
+                    <RowFixed>
+                      <b>dte: </b> {'\xa0' + (dte * 365).toFixed(1)}d
                     </RowFixed>
                     <RowFixed>
                       <b>delta: </b> {'\xa0' + (delta * 100).toFixed(0)}
