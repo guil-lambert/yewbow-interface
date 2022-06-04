@@ -142,8 +142,8 @@ export default function AddLiquidity({
     baseCurrency && quoteCurrency && feeAmount
       ? Pool.getAddress(baseCurrency?.wrapped, quoteCurrency?.wrapped, feeAmount)
       : ' '
-  const poolPositions = useAllPositions('0x', poolAddress.toLowerCase())
-  const positions = useAllPositions(account ? account : undefined, poolAddress.toLowerCase())
+  const poolPositions = useAllPositions('0x', poolAddress.toLowerCase(), '0', 1000)
+  const positions = useAllPositions(account ? account : undefined, poolAddress.toLowerCase(), '0', 1000)
   const { onFieldAInput, onFieldBInput, onLeftRangeInput, onRightRangeInput, onStartPriceInput } =
     useV3MintActionHandlers(noLiquidity)
 

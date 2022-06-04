@@ -38,10 +38,10 @@ export const api = createApi({
       }),
     }),
     allPositions: builder.query({
-      query: ({ owner, poolAddress = '0x' }) => ({
+      query: ({ owner, poolAddress = '0x', tokenId = '0', num = '1000' }) => ({
         document: gql`
-          query allPositions($owner: Bytes!, $poolAddress: String!) {
-            positions(first: 1000, where: { owner_contains: $owner, pool_contains: $poolAddress }) {
+          query allPositions($owner: Bytes!, $poolAddress: String!, $tokenId: ID!, $num: Int!) {
+            positions(first: $num, where: { owner_contains: $owner, pool_contains: $poolAddress, id_gte: $tokenId }) {
               id
               liquidity
               amountDepositedUSD
@@ -95,6 +95,8 @@ export const api = createApi({
         variables: {
           owner,
           poolAddress,
+          tokenId,
+          num,
         },
       }),
     }),
