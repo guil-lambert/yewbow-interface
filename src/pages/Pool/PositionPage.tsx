@@ -714,7 +714,7 @@ export function PositionPage({
     dayData != 0
       ? dayData.map((i) => {
           return {
-            date: new Date(i.date * 1000).toLocaleDateString('en-US'),
+            date: i.date,
             price:
               token0 == currencyETH
                 ? parseFloat(i.token0Price).toPrecision(4)
@@ -1350,7 +1350,7 @@ export function PositionPage({
                         <ReferenceLine x={startDate - (startDate % 86400)} stroke="#cc333f" />
                         <ReferenceLine y={Pa} stroke="#000" strokeDasharray="3 5" />
                         <ReferenceLine y={Pb} stroke="#000" strokeDasharray="3 5" />
-                        <Tooltip />
+                        <Tooltip labelFormatter={(t) => new Date(t * 1000).toLocaleDateString('en-CA')} />
                       </ComposedChart>
                     </RowFixed>
                   </ResponsiveRow>
