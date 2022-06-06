@@ -425,7 +425,7 @@ export function PositionPage({
   const price1 = useUSDCPrice(token1 ?? undefined)
 
   const fiatValueOfFees: CurrencyAmount<Currency> | null = useMemo(() => {
-    if (!price0 || !price1 || !feeValue0 || !feeValue1) return null
+    if (!price0 || !price1 || !feeValue0 || !feeValue1 || !tokenId) return null
 
     // we wrap because it doesn't matter, the quote returns a USDC amount
     const feeValue0Wrapped = feeValue0?.wrapped
@@ -435,8 +435,9 @@ export function PositionPage({
 
     const amount0 = price0.quote(feeValue0Wrapped)
     const amount1 = price1.quote(feeValue1Wrapped)
+    localStorage.setItem(tokenId ? tokenId.toString() : '0', JSON.stringify(amount0.add(amount1)))
     return amount0.add(amount1)
-  }, [price0, price1, feeValue0, feeValue1])
+  }, [price0, price1, feeValue0, feeValue1, tokenId])
 
   const fiatValueOfLiquidity: CurrencyAmount<Token> | null = useMemo(() => {
     if (!price0 || !price1 || !position) return null
@@ -608,6 +609,7 @@ export function PositionPage({
         ? parseFloat(feeValue1.toSignificant(6)) + parseFloat(feeValue0.toSignificant(6)) * Pc
         : parseFloat(feeValue0.toSignificant(6)) + parseFloat(feeValue1.toSignificant(6)) * Pc
       : 0
+
   const strike = (Pb * Pa) ** 0.5
   const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
   const dp = Pb > Pa ? Pb - Pa : Pa - Pb
@@ -651,8 +653,8 @@ export function PositionPage({
       ? dE * startPrice
       : (dE * (2 * (strike * Pb * r) ** 0.5 - strike - Pb)) / (r - 1)
   //const BE = (feeValueTotal * (1 - r)) / dE + strike * (-2 * r ** 0.5 + 2 * r)
-  const Pmin = Pc < Pa - dp ? Pc * 0.75 : Pc > Pb + dp ? Pa * 0.75 - (Pc - Pb) : Pa * 0.75 - dp
-  const Pmax = Pc > Pb + dp ? Pc * 1.33 : Pc < Pa - dp ? Pb * 1.33 + (Pa - Pc) : Pb * 1.33 + dp
+  const Pmin = Pc < Pa - dp ? Pc * 0.66 : Pc > Pb + dp ? Pa * 0.66 - (Pc - Pb) : Pa * 0.66 - dp
+  const Pmax = Pc > Pb + dp ? Pc * 1.5 : Pc < Pa - dp ? Pb * 1.5 + (Pa - Pc) : Pb * 1.5 + dp
   const profit = removed
     ? amountCollectedUSD - amountDepositedUSD
     : Pc < Pb && Pc > Pa
@@ -744,12 +746,12 @@ export function PositionPage({
   const expectedReturnsUSD = (amountDepositedUSD * optionValue) / Pc
   const calculatedReturns = parseFloat(amountDepositedUSD) + expectedReturnsUSD
   const returnColor = fiatValueOfPosition.toFixed(2) > calculatedReturns.toFixed(2) ? theme.green1 : theme.red1
-  const nPt = 72
+  const nPt = 192
   const dataPayoff: any[] = []
   const dataPayoffX: any[] = []
   const dataPayoffY: any[] = []
   for (let pt = 0; pt <= nPt; pt++) {
-    const xx = ((Pb * r - Pa / r ** 2) * pt) / nPt + Pa / r ** 2
+    const xx = ((Pmax * r - Pmin / r) * pt) / nPt + Pmin / r
     const yy =
       xx < Pa
         ? dE * xx + feeValueETH + feeValueToken * xx - baseValue - dE * shortAmount * (xx - startPrice)
@@ -1010,7 +1012,7 @@ export function PositionPage({
                     </Scatter>
                     <Scatter line={{ stroke: '#000', strokeWidth: 1.5 }} data={dataPayoff} dataKey="x" />
                     <Tooltip
-                      labelFormatter={() => ' '}
+                      labelFormatter={(t) => ' '}
                       allowEscapeViewBox={{
                         x: true,
                         y: true,
@@ -1034,6 +1036,7 @@ export function PositionPage({
                       textAnchor="end"
                       interval={0}
                       allowDataOverflow={true}
+                      allowDuplicatedCategory={false}
                       angle={-45}
                       tick={{ fontSize: 10 }}
                       ticks={[
@@ -1043,7 +1046,7 @@ export function PositionPage({
                         Number(breakEven0).toPrecision(3),
                         Number(breakEven1).toPrecision(3),
                       ]}
-                      domain={[Math.min(Pa / r, Pc / r), Math.max(Pb * r, Pc * r)]}
+                      domain={[Math.min(Pa / r ** 2, Pc / r ** 2), Math.max(Pb * r ** 1.5, Pc * r ** 1.5)]}
                       type="number"
                       label={{ value: 'Price', position: 'insideBottomRight', offset: 0 }}
                     />
@@ -1191,6 +1194,14 @@ export function PositionPage({
                       <Trans>
                         Unclaimed fees:
                         <br />
+                        <ButtonConfirmed
+                          width="fit-content"
+                          padding="6px 8px"
+                          confirmed={true}
+                          style={{ marginLeft: '24px', marginRight: '0px' }}
+                        >
+                          <Trans>Check fees</Trans>
+                        </ButtonConfirmed>
                       </Trans>
                     </Label>
                     {fiatValueOfFees?.greaterThan(new Fraction(1, 10000)) ? (

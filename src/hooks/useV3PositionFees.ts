@@ -48,11 +48,17 @@ export function useV3PositionFees(
     }
   }, [positionManager, tokenIdHexString, latestBlockNumber])
 
-  if (pool && amounts) {
-    return [
-      CurrencyAmount.fromRawAmount(!asWETH ? unwrappedToken(pool.token0) : pool.token0, amounts[0].toString()),
-      CurrencyAmount.fromRawAmount(!asWETH ? unwrappedToken(pool.token1) : pool.token1, amounts[1].toString()),
-    ]
+  if (pool && amounts && tokenId) {
+    const fees0 = CurrencyAmount.fromRawAmount(
+      !asWETH ? unwrappedToken(pool.token0) : pool.token0,
+      amounts[0].toString()
+    )
+    const fees1 = CurrencyAmount.fromRawAmount(
+      !asWETH ? unwrappedToken(pool.token1) : pool.token1,
+      amounts[1].toString()
+    )
+    localStorage.setItem(tokenId.toString(), JSON.stringify([fees0, fees1]))
+    return [fees0, fees1]
   } else {
     return [undefined, undefined]
   }
