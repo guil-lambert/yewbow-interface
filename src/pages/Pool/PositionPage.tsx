@@ -278,21 +278,17 @@ function LinkedCurrency({ chainId, currency }: { chainId?: number; currency?: Cu
   )
 }
 
-function getRatio(
-  lower: Price<Currency, Currency>,
-  current: Price<Currency, Currency>,
-  upper: Price<Currency, Currency>
-) {
+function getRatio(lower: number, current: number, upper: number) {
   try {
-    if (!current.greaterThan(lower)) {
+    if (current < lower) {
       return 100
-    } else if (!current.lessThan(upper)) {
+    } else if (current > upper) {
       return 0
     }
 
-    const a = Number.parseFloat(lower.toSignificant(15))
-    const b = Number.parseFloat(upper.toSignificant(15))
-    const c = Number.parseFloat(current.toSignificant(15))
+    const a = lower
+    const b = upper
+    const c = current
 
     const ratio = Math.floor((1 / ((Math.sqrt(a * b) - Math.sqrt(b * c)) / (c - Math.sqrt(b * c)) + 1)) * 100)
 
@@ -363,67 +359,32 @@ export function PositionPage({
   )
 
   const removed = liquidity?.eq(0)
+  const ETHprice = useUSDCPrice(WETH9_EXTENDED[1] ?? undefined)
 
   const token0 = useToken(token0Address)
   const token1 = useToken(token1Address)
-
-  const metadata = usePositionTokenURI(parsedTokenId)
-
-  // flag for receiving WETH
-  const [receiveWETH, setReceiveWETH] = useState(true)
-  const currency0 = token0 ? token0 : undefined
-  const currency1 = token1 ? token1 : undefined
-
-  // construct Position from details returned
-  const [poolState, pool] = usePool(token0 ?? undefined, token1 ?? undefined, feeAmount)
-  const position = useMemo(() => {
-    if (pool && liquidity && typeof tickLower === 'number' && typeof tickUpper === 'number') {
-      return new Position({ pool, liquidity: liquidity.toString(), tickLower, tickUpper })
-    }
-    return undefined
-  }, [liquidity, pool, tickLower, tickUpper])
-
-  const tickAtLimit = useIsTickAtLimit(feeAmount, tickLower, tickUpper)
-
-  const pricesFromPosition = getPriceOrderingFromPositionForUI(position)
-  const [manuallyInverted, setManuallyInverted] = useState(true)
-
-  // handle manual inversion
-  const { priceLower, priceUpper, base } = useInverter({
-    priceLower: pricesFromPosition.priceLower,
-    priceUpper: pricesFromPosition.priceUpper,
-    quote: pricesFromPosition.quote,
-    base: pricesFromPosition.base,
-    invert: manuallyInverted,
-  })
-
-  const inverted = token1 ? base?.equals(token1) : undefined
-  const currencyQuote = inverted ? currency0 : currency1
-  const currencyBase = inverted ? currency1 : currency0
-
-  const ratio = useMemo(() => {
-    return priceLower && pool && priceUpper
-      ? getRatio(
-          inverted ? priceUpper.invert() : priceLower,
-          pool.token0Price,
-          inverted ? priceLower.invert() : priceUpper
-        )
-      : undefined
-  }, [inverted, pool, priceLower, priceUpper])
-
-  // fees
-  const [feeValue0, feeValue1] = useV3PositionFees(pool ?? undefined, positionDetails?.tokenId, receiveWETH)
-  const [radioState, setradioState] = useState('')
-
-  const [collecting, setCollecting] = useState<boolean>(false)
-  const [collectMigrationHash, setCollectMigrationHash] = useState<string | null>(null)
-  const isCollectPending = useIsTransactionPending(collectMigrationHash ?? undefined)
-  const [showConfirm, setShowConfirm] = useState(false)
 
   // usdc prices always in terms of tokens
   const price0 = useUSDCPrice(token0 ?? undefined)
   const price1 = useUSDCPrice(token1 ?? undefined)
 
+  const metadata = usePositionTokenURI(parsedTokenId)
+
+  // flag for receiving WETH
+  const [receiveWETH, setReceiveWETH] = useState(true)
+  const [computeFees, setComputeFees] = useState(false)
+  const currency0 = token0 ? token0 : undefined
+  const currency1 = token1 ? token1 : undefined
+
+  // construct Position from details returned
+  const [poolState, pool] = usePool(token0 ?? undefined, token1 ?? undefined, feeAmount)
+  const [feeValue0, feeValue1] = useV3PositionFees(pool ?? undefined, positionDetails?.tokenId, receiveWETH)
+
+  const [radioState, setradioState] = useState('')
+  const [collecting, setCollecting] = useState<boolean>(false)
+  const [collectMigrationHash, setCollectMigrationHash] = useState<string | null>(null)
+  const isCollectPending = useIsTransactionPending(collectMigrationHash ?? undefined)
+  const [showConfirm, setShowConfirm] = useState(false)
   const fiatValueOfFees: CurrencyAmount<Currency> | null = useMemo(() => {
     if (!price0 || !price1 || !feeValue0 || !feeValue1 || !tokenId) return null
 
@@ -438,6 +399,12 @@ export function PositionPage({
     localStorage.setItem(tokenId ? tokenId.toString() : '0', JSON.stringify(amount0.add(amount1)))
     return amount0.add(amount1)
   }, [price0, price1, feeValue0, feeValue1, tokenId])
+  const position = useMemo(() => {
+    if (pool && liquidity && typeof tickLower === 'number' && typeof tickUpper === 'number') {
+      return new Position({ pool, liquidity: liquidity.toString(), tickLower, tickUpper })
+    }
+    return undefined
+  }, [liquidity, pool, tickLower, tickUpper])
 
   const fiatValueOfLiquidity: CurrencyAmount<Token> | null = useMemo(() => {
     if (!price0 || !price1 || !position) return null
@@ -445,6 +412,8 @@ export function PositionPage({
     const amount1 = price1.quote(position.amount1)
     return amount0.add(amount1)
   }, [price0, price1, position])
+
+  // fees
 
   const fiatValueOfPosition =
     price0 && price1 && position ? price0.quote(position.amount0).add(price1.quote(position.amount1)) : 0
@@ -500,7 +469,22 @@ export function PositionPage({
         console.error(error)
       })
   }, [chainId, feeValue0, feeValue1, positionManager, account, tokenId, addTransaction, library])
-  const ETHprice = useUSDCPrice(WETH9_EXTENDED[1] ?? undefined)
+
+  const tickAtLimit = useIsTickAtLimit(feeAmount, tickLower, tickUpper)
+  const [manuallyInverted, setManuallyInverted] = useState(true)
+  const pricesFromPosition = getPriceOrderingFromPositionForUI(position)
+  // handle manual inversion
+  const { priceLower, priceUpper, base } = useInverter({
+    priceLower: pricesFromPosition.priceLower,
+    priceUpper: pricesFromPosition.priceUpper,
+    quote: pricesFromPosition.quote,
+    base: pricesFromPosition.base,
+    invert: manuallyInverted,
+  })
+  const inverted = token1 && base ? base.equals(token1) : undefined
+
+  const currencyQuote = inverted ? currency0 : currency1
+  const currencyBase = inverted ? currency1 : currency0
 
   //const owner = useSingleCallResult(!!tokenId ? positionManager : null, 'ownerOf', [tokenId]).result?.[0]
   const ownsNFT = owner === account || positionDetails?.operator === account
@@ -509,26 +493,40 @@ export function PositionPage({
 
   const currentPosition =
     tokenId && positions.positions ? positions.positions.filter((obj) => obj.id == tokenId.toString()) : 0
-  const depositedToken0 = currentPosition != 0 ? currentPosition[0].depositedToken0 : 1
-  const depositedToken1 = currentPosition != 0 ? currentPosition[0].depositedToken1 : 1
+  const [depositedToken0, depositedToken1] =
+    currentPosition != 0 ? [currentPosition[0].depositedToken0, currentPosition[0].depositedToken1] : [1, 1]
   //const collectedFeesToken0 = currentPosition != 0 ? currentPosition[0].collectedFeesToken0 : 1
   //const collectedFeesToken1 = currentPosition != 0 ? currentPosition[0].collectedFeesToken1 : 1
   const positionLiquidity = currentPosition != 0 ? currentPosition[0].liquidity : 1
-  const feeGrowthInside0LastX128 = currentPosition != 0 ? currentPosition[0].feeGrowthInside0LastX128 : 1
-  const feeGrowthInside1LastX128 = currentPosition != 0 ? currentPosition[0].feeGrowthInside1LastX128 : 1
+  const [feeGrowthInside0LastX128, feeGrowthInside1LastX128] =
+    currentPosition != 0
+      ? [currentPosition[0].feeGrowthInside0LastX128, currentPosition[0].feeGrowthInside1LastX128]
+      : [1, 1]
   const b256 = BigNumber.from('115792089237316195423570985008687907853269984665640564039457584007913129639936')
   //const b128 = BigNumber.from('340282366920938463463374607431768211456')
   const feeGrowthLast0 = b256.sub(BigNumber.from(feeGrowthInside0LastX128))
   const feeGrowthLast1 = b256.sub(BigNumber.from(feeGrowthInside1LastX128))
-  const feeGrowthGlobal0X128 = currentPosition != 0 ? currentPosition[0].pool.feeGrowthGlobal0X128 : 1
-  const feeGrowthGlobal1X128 = currentPosition != 0 ? currentPosition[0].pool.feeGrowthGlobal1X128 : 1
-  const feeLowerOutside0X128 = currentPosition != 0 ? currentPosition[0].tickLower.feeGrowthOutside0X128 : 1
-  const feeLowerOutside1X128 = currentPosition != 0 ? currentPosition[0].tickLower.feeGrowthOutside1X128 : 1
-  const feeUpperOutside0X128 = currentPosition != 0 ? currentPosition[0].tickUpper.feeGrowthOutside0X128 : 1
-  const feeUpperOutside1X128 = currentPosition != 0 ? currentPosition[0].tickUpper.feeGrowthOutside1X128 : 1
-  const amountDepositedUSD = currentPosition != 0 ? currentPosition[0].amountDepositedUSD : 1
+  const [
+    feeGrowthGlobal0X128,
+    feeGrowthGlobal1X128,
+    feeLowerOutside0X128,
+    feeLowerOutside1X128,
+    feeUpperOutside0X128,
+    feeUpperOutside1X128,
+  ] =
+    currentPosition != 0
+      ? [
+          currentPosition[0].pool.feeGrowthGlobal0X128,
+          currentPosition[0].pool.feeGrowthGlobal1X128,
+          currentPosition[0].tickLower.feeGrowthOutside0X128,
+          currentPosition[0].tickLower.feeGrowthOutside1X128,
+          currentPosition[0].tickUpper.feeGrowthOutside0X128,
+          currentPosition[0].tickUpper.feeGrowthOutside1X128,
+        ]
+      : [1, 1, 1, 1, 1, 1]
+  const [amountDepositedUSD, amountCollectedUSD] =
+    currentPosition != 0 ? [currentPosition[0].amountDepositedUSD, currentPosition[0].amountCollectedUSD] : [1, 1]
   //const amountWithdrawnUSD = currentPosition != 0 ? currentPosition[0].amountWithdrawnUSD : 1
-  const amountCollectedUSD = currentPosition != 0 ? currentPosition[0].amountCollectedUSD : 1
   //const dep0 = positions.positions.find((id) => id == parseInt(tokenId)).depositedToken0
   const dec0 = pool ? pool.token0.decimals : 18
   const dec1 = pool ? pool.token1.decimals : 18
@@ -555,18 +553,12 @@ export function PositionPage({
         ? currency1
         : currency0
       : currency1
-  const amtETH =
+  const [amtETH, amtTok] =
     position && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
-        ? parseFloat(position?.amount1.toSignificant(5))
-        : parseFloat(position?.amount0.toSignificant(5))
-      : 0
-  const amtTok =
-    position && chainId
-      ? token1Address == WETH9_EXTENDED[chainId]?.address
-        ? parseFloat(position?.amount0.toSignificant(5))
-        : parseFloat(position?.amount1.toSignificant(5))
-      : 0
+        ? [parseFloat(position?.amount1.toSignificant(5)), parseFloat(position?.amount0.toSignificant(5))]
+        : [parseFloat(position?.amount0.toSignificant(5)), parseFloat(position?.amount1.toSignificant(5))]
+      : [0, 0]
   const Pa =
     position && chainId && tickLower && tickUpper && pool
       ? token1Address == WETH9_EXTENDED[chainId]?.address
@@ -585,6 +577,8 @@ export function PositionPage({
         ? 1.0001 ** pool.tickCurrent * 10 ** (pool.token0.decimals - pool.token1.decimals)
         : 1.0001 ** -pool.tickCurrent * 10 ** (pool.token1.decimals - pool.token0.decimals)
       : 0
+  const ratio = getRatio(Pa, Pc, Pb)
+
   const LiqValueTotal =
     position && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
@@ -1012,7 +1006,6 @@ export function PositionPage({
                     </Scatter>
                     <Scatter line={{ stroke: '#000', strokeWidth: 1.5 }} data={dataPayoff} dataKey="x" />
                     <Tooltip
-                      labelFormatter={(t) => ' '}
                       allowEscapeViewBox={{
                         x: true,
                         y: true,
@@ -1191,36 +1184,50 @@ export function PositionPage({
                 <AutoColumn gap="md" style={{ width: '100%' }}>
                   <AutoColumn gap="md">
                     <Label>
-                      <Trans>
-                        Unclaimed fees:
-                        <br />
-                        <ButtonConfirmed
-                          width="fit-content"
-                          padding="6px 8px"
-                          confirmed={true}
-                          style={{ marginLeft: '24px', marginRight: '0px' }}
-                        >
-                          <Trans>Check fees</Trans>
-                        </ButtonConfirmed>
-                      </Trans>
+                      <Trans>Unclaimed fees</Trans>
                     </Label>
-                    {fiatValueOfFees?.greaterThan(new Fraction(1, 10000)) ? (
+                    <ResponsiveRow>
+                      <RowFixed>Compute fees:</RowFixed>
+                      <RowFixed>
+                        <Toggle
+                          id="receive-as-weth"
+                          isActive={computeFees}
+                          toggle={() => setComputeFees((computeFees) => !computeFees)}
+                        />
+                      </RowFixed>
+                    </ResponsiveRow>
+                    {!computeFees ? (
                       <TYPE.largeHeader color={theme.green1} fontSize="24px" fontWeight={500}>
                         <ResponsiveRow>
                           <RowFixed>
-                            <Trans>${fiatValueOfFees.toFixed(2, { groupSeparator: ',' })}</Trans>
+                            <Trans>
+                              ${fiatValueOfFees ? fiatValueOfFees.toFixed(2, { groupSeparator: ',' }) : '-'}
+                            </Trans>
                           </RowFixed>
                           <RowFixed>
                             <Trans>
                               <CurrencyLogo currency={currencyETH} size={'20px'} style={{ marginRight: '0.5rem' }} />
-                              {feeValueTotal.toPrecision(3)}
+                              {feeValueTotal ? feeValueTotal.toPrecision(3) : '-'}
                             </Trans>
                           </RowFixed>
                         </ResponsiveRow>
                       </TYPE.largeHeader>
                     ) : (
-                      <TYPE.largeHeader color={theme.text1} fontSize="36px" fontWeight={500}>
-                        <Trans>{(feeVal0 + Pc * feeVal1).toPrecision(3)}</Trans>
+                      <TYPE.largeHeader color={theme.blue2} fontSize="24px" fontWeight={500}>
+                        <ResponsiveRow>
+                          <RowFixed>
+                            <Trans>
+                              $
+                              {(parseFloat(ETHprice ? ETHprice.toFixed(2) : '1') * (feeVal0 + Pc * feeVal1)).toFixed(2)}
+                            </Trans>
+                          </RowFixed>
+                          <RowFixed>
+                            <Trans>
+                              <CurrencyLogo currency={currencyETH} size={'20px'} style={{ marginRight: '0.5rem' }} />
+                              {(feeVal0 + Pc * feeVal1).toPrecision(3)}
+                            </Trans>
+                          </RowFixed>
+                        </ResponsiveRow>
                       </TYPE.largeHeader>
                     )}
                   </AutoColumn>
