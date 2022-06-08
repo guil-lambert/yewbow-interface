@@ -198,7 +198,12 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
     return undefined
   }, [liquidity, pool, tickLower, tickUpper])
 
-  const [feeValue0, feeValue1] = useV3PositionFees(pool ?? undefined, positionDetails?.tokenId, false)
+  const [feeV0, feeV1] = useV3PositionFees(pool ?? undefined, positionDetails?.tokenId, false)
+
+  const aa = localStorage.getItem(positionDetails.tokenId ? positionDetails.tokenId.toString() : '')
+  const bb = aa !== null ? aa : ''
+
+  const [feeValue0, feeValue1] = !feeV0 && !feeV1 ? JSON.parse(bb) : [feeV0?.toSignificant(5), feeV1?.toSignificant(5)]
 
   const tickAtLimit = useIsTickAtLimit(feeAmount, tickLower, tickUpper)
 
@@ -217,12 +222,7 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
   //const above = formattedPrice ? formatAmount(formattedPrice) >= highPrice : undefined
 
   const removed = liquidity?.eq(0)
-  const fg =
-    feeValue0 && feeValue1
-      ? feeValue1.toSignificant(2) < feeValue0.toSignificant(2)
-        ? feeValue1.multiply(2)
-        : feeValue0.multiply(2)
-      : 0
+  const fg = feeValue0 && feeValue1 ? (feeValue1 < feeValue0 ? feeValue1 * 2 : feeValue0 * 2) : 0
 
   //const outOfRange: boolean = pool ? pool.tickCurrent > tickLower || pool.tickCurrent <= tickUpper : false
   const positionSummaryLink = '/pool/' + positionDetails.tokenId
@@ -423,14 +423,7 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
             <br />
             {''}
             {''} {fg ? fg.toFixed(2) : '-'}
-            {''} ETH (
-            <Trans>
-              {fg && yMax / Pc + xMax > 0
-                ? ((100 * parseFloat(fg.toSignificant(5))) / (yMax / Pc + xMax)).toFixed(1)
-                : '-'}
-              %
-            </Trans>
-            )
+            {''} ETH (<Trans>{fg && yMax / Pc + xMax > 0 ? ((100 * fg) / (yMax / Pc + xMax)).toFixed(1) : '-'}%</Trans>)
           </Label>
           <Label end={1} fontWeight={400}>
             Delta:{(delta * 100).toFixed(0)}

@@ -333,6 +333,7 @@ export function PositionPage({
     params: { tokenId: tokenIdFromUrl },
   },
 }: RouteComponentProps<{ tokenId?: string }>) {
+  const ETHprice = useUSDCPrice(WETH9_EXTENDED[1] ?? undefined)
   const { chainId, account, library } = useActiveWeb3React()
   const theme = useTheme()
   const parsedTokenId = tokenIdFromUrl ? BigNumber.from(tokenIdFromUrl) : undefined
@@ -346,29 +347,19 @@ export function PositionPage({
     tickUpper,
     tokenId,
   } = positionDetails || {}
+  const token0 = useToken(token0Address)
+  const token1 = useToken(token1Address)
+  // usdc prices always in terms of tokens
+  const price0 = useUSDCPrice(token0 ?? undefined)
+  const price1 = useUSDCPrice(token1 ?? undefined)
+
   const addTransaction = useTransactionAdder()
   const positionManager = useV3NFTPositionManagerContract()
 
   const owner = useSingleCallResult(!!tokenId ? positionManager : null, 'ownerOf', [tokenId]).result?.[0]
   const ownsIt = account ? (owner === account ? true : false) : false
-  const positions = useAllPositions(
-    ownsIt ? (account ? account : undefined) : owner,
-    '0x',
-    tokenId ? tokenId.toString() : '0',
-    1
-  )
-
-  const removed = liquidity?.eq(0)
-  const ETHprice = useUSDCPrice(WETH9_EXTENDED[1] ?? undefined)
-
-  const token0 = useToken(token0Address)
-  const token1 = useToken(token1Address)
-
-  // usdc prices always in terms of tokens
-  const price0 = useUSDCPrice(token0 ?? undefined)
-  const price1 = useUSDCPrice(token1 ?? undefined)
-
   const metadata = usePositionTokenURI(parsedTokenId)
+  const removed = liquidity?.eq(0)
 
   // flag for receiving WETH
   const [receiveWETH, setReceiveWETH] = useState(true)
@@ -396,7 +387,7 @@ export function PositionPage({
 
     const amount0 = price0.quote(feeValue0Wrapped)
     const amount1 = price1.quote(feeValue1Wrapped)
-    localStorage.setItem(tokenId ? tokenId.toString() : '0', JSON.stringify(amount0.add(amount1)))
+    //localStorage.setItem(tokenId ? tokenId.toString() : '0', JSON.stringify(amount0.add(amount1)))
     return amount0.add(amount1)
   }, [price0, price1, feeValue0, feeValue1, tokenId])
   const position = useMemo(() => {
@@ -417,6 +408,7 @@ export function PositionPage({
 
   const fiatValueOfPosition =
     price0 && price1 && position ? price0.quote(position.amount0).add(price1.quote(position.amount1)) : 0
+
   const collect = useCallback(() => {
     if (!chainId || !feeValue0 || !feeValue1 || !positionManager || !account || !tokenId || !library) return
 
@@ -490,6 +482,14 @@ export function PositionPage({
   const ownsNFT = owner === account || positionDetails?.operator === account
   const poolAddress =
     currency0 && currency1 && feeAmount ? Pool.getAddress(currency0?.wrapped, currency1?.wrapped, feeAmount) : ' '
+
+  // MOVE STUFF AB0VE THIS!!!
+  const positions = useAllPositions(
+    ownsIt ? (account ? account : undefined) : owner,
+    '0x',
+    tokenId ? tokenId.toString() : '0',
+    1
+  )
 
   const currentPosition =
     tokenId && positions.positions ? positions.positions.filter((obj) => obj.id == tokenId.toString()) : 0
@@ -579,6 +579,23 @@ export function PositionPage({
       : 0
   const ratio = getRatio(Pa, Pc, Pb)
 
+  const feeGuts0 =
+    Pc < Pb && Pc > Pa
+      ? feeGrowthGlobal0X128 - feeUpperOutside0X128 - feeLowerOutside0X128
+      : feeUpperOutside0X128 - feeLowerOutside0X128
+  const feeGuts1 =
+    Pc < Pb && Pc > Pa
+      ? feeGrowthGlobal1X128 - feeUpperOutside1X128 - feeLowerOutside1X128
+      : feeUpperOutside1X128 - feeLowerOutside1X128
+  const feeVal0 =
+    feeGrowthInside0LastX128 > 2 ** 128
+      ? ((feeGuts0 + parseInt(feeGrowthLast0.toString())) * positionLiquidity) / (2 ** 128 * 10 ** dec0)
+      : ((feeGuts0 - feeGrowthInside0LastX128) * positionLiquidity) / (2 ** 128 * 10 ** dec0)
+  const feeVal1 =
+    feeGrowthInside1LastX128 > 2 ** 128
+      ? ((feeGuts1 + parseInt(feeGrowthLast1.toString())) * positionLiquidity) / (2 ** 128 * 10 ** dec1)
+      : ((feeGuts1 - feeGrowthInside1LastX128) * positionLiquidity) / (2 ** 128 * 10 ** dec1)
+
   const LiqValueTotal =
     position && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
@@ -590,20 +607,26 @@ export function PositionPage({
       ? token1Address == WETH9_EXTENDED[chainId]?.address
         ? parseFloat(feeValue1.toSignificant(6))
         : parseFloat(feeValue0.toSignificant(6))
-      : 0
+      : token1Address == WETH9_EXTENDED['1']?.address
+      ? feeVal1
+      : feeVal0
+
   const feeValueToken =
     feeValue0 && feeValue1 && chainId
       ? token1Address == WETH9_EXTENDED[chainId]?.address
         ? parseFloat(feeValue0.toSignificant(6))
         : parseFloat(feeValue1.toSignificant(6))
-      : 0
-  const feeValueTotal =
-    feeValue0 && feeValue1 && chainId
-      ? token1Address == WETH9_EXTENDED[chainId]?.address
-        ? parseFloat(feeValue1.toSignificant(6)) + parseFloat(feeValue0.toSignificant(6)) * Pc
-        : parseFloat(feeValue0.toSignificant(6)) + parseFloat(feeValue1.toSignificant(6)) * Pc
-      : 0
+      : token1Address == WETH9_EXTENDED['1']?.address
+      ? feeVal0
+      : feeVal1
 
+  const feeValueTotal = feeValueETH + feeValueToken * Pc > 0 ? feeValueETH + feeValueToken * Pc : 0
+
+  if (feeValueTotal > 0) {
+    localStorage.setItem(tokenId ? tokenId.toString() : '0', JSON.stringify([feeValueETH, feeValueToken]))
+  } else {
+    localStorage.setItem(tokenId ? tokenId.toString() : '0', '0')
+  }
   const strike = (Pb * Pa) ** 0.5
   const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
   const dp = Pb > Pa ? Pb - Pa : Pa - Pb
@@ -653,30 +676,12 @@ export function PositionPage({
     ? amountCollectedUSD - amountDepositedUSD
     : Pc < Pb && Pc > Pa
     ? (dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) +
-      feeValueETH +
-      feeValueToken * Pc -
+      feeValueTotal +
       baseValue -
       dE * shortAmount * (Pc - startPrice)
     : Pc < Pa
-    ? dE * Pc + feeValueETH + feeValueToken * Pc - baseValue - dE * shortAmount * (Pc - startPrice)
-    : dE * strike + feeValueETH + feeValueToken * Pc - baseValue - dE * shortAmount * (Pc - startPrice)
-  const feeGuts0 =
-    Pc < Pb && Pc > Pa
-      ? feeGrowthGlobal0X128 - feeUpperOutside0X128 - feeLowerOutside0X128
-      : feeUpperOutside0X128 - feeLowerOutside0X128
-  const feeGuts1 =
-    Pc < Pb && Pc > Pa
-      ? feeGrowthGlobal1X128 - feeUpperOutside1X128 - feeLowerOutside1X128
-      : feeUpperOutside1X128 - feeLowerOutside1X128
-  const feeVal0 =
-    feeGrowthInside0LastX128 > 2 ** 128
-      ? ((feeGuts0 + parseInt(feeGrowthLast0.toString())) * positionLiquidity) / (2 ** 128 * 10 ** dec0)
-      : ((feeGuts0 - feeGrowthInside0LastX128) * positionLiquidity) / (2 ** 128 * 10 ** dec0)
-
-  const feeVal1 =
-    feeGrowthInside1LastX128 > 2 ** 128
-      ? ((feeGuts1 + parseInt(feeGrowthLast1.toString())) * positionLiquidity) / (2 ** 128 * 10 ** dec1)
-      : ((feeGuts1 - feeGrowthInside1LastX128) * positionLiquidity) / (2 ** 128 * 10 ** dec1)
+    ? dE * Pc + feeValueTotal - baseValue - dE * shortAmount * (Pc - startPrice)
+    : dE * strike + feeValueTotal - baseValue - dE * shortAmount * (Pc - startPrice)
   const onOptimisticChain = chainId && [SupportedChainId.OPTIMISM, SupportedChainId.OPTIMISTIC_KOVAN].includes(chainId)
   const showCollectAsWeth = Boolean(
     ownsNFT &&
@@ -781,22 +786,13 @@ export function PositionPage({
         Pc < Pb && Pc > Pa
           ? (
               (dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) +
-              feeValueETH +
-              feeValueToken * Pc -
+              feeValueTotal +
               baseValue -
               dE * shortAmount * (Pc - startPrice)
             ).toPrecision(3)
           : Pc < Pa
-          ? (dE * Pc + feeValueETH + feeValueToken * Pc - baseValue - dE * shortAmount * (Pc - startPrice)).toPrecision(
-              3
-            )
-          : (
-              dE * strike +
-              feeValueETH +
-              feeValueToken * Pc -
-              baseValue -
-              dE * shortAmount * (Pc - startPrice)
-            ).toPrecision(3),
+          ? (dE * Pc + feeValueTotal - baseValue - dE * shortAmount * (Pc - startPrice)).toPrecision(3)
+          : (dE * strike + feeValueTotal + baseValue - dE * shortAmount * (Pc - startPrice)).toPrecision(3),
       z: 7.5,
     },
   ]
@@ -1190,7 +1186,7 @@ export function PositionPage({
                       <RowFixed>Compute fees:</RowFixed>
                       <RowFixed>
                         <Toggle
-                          id="receive-as-weth"
+                          id="compute-fees"
                           isActive={computeFees}
                           toggle={() => setComputeFees((computeFees) => !computeFees)}
                         />
