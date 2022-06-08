@@ -369,7 +369,10 @@ export function PositionPage({
 
   // construct Position from details returned
   const [poolState, pool] = usePool(token0 ?? undefined, token1 ?? undefined, feeAmount)
+
   const [feeValue0, feeValue1] = useV3PositionFees(pool ?? undefined, positionDetails?.tokenId, receiveWETH)
+  const stringifiedFees = localStorage.getItem(tokenId ? tokenId.toString() : '')
+  const feesArray = stringifiedFees !== null ? stringifiedFees : ''
 
   const [radioState, setradioState] = useState('')
   const [collecting, setCollecting] = useState<boolean>(false)
@@ -387,7 +390,6 @@ export function PositionPage({
 
     const amount0 = price0.quote(feeValue0Wrapped)
     const amount1 = price1.quote(feeValue1Wrapped)
-    //localStorage.setItem(tokenId ? tokenId.toString() : '0', JSON.stringify(amount0.add(amount1)))
     return amount0.add(amount1)
   }, [price0, price1, feeValue0, feeValue1, tokenId])
   const position = useMemo(() => {
@@ -608,8 +610,8 @@ export function PositionPage({
         ? parseFloat(feeValue1.toSignificant(6))
         : parseFloat(feeValue0.toSignificant(6))
       : token1Address == WETH9_EXTENDED['1']?.address
-      ? feeVal1
-      : feeVal0
+      ? parseFloat(feesArray[1]) //feeVal1
+      : parseFloat(feesArray[0]) //feeVal0
 
   const feeValueToken =
     feeValue0 && feeValue1 && chainId
@@ -617,16 +619,11 @@ export function PositionPage({
         ? parseFloat(feeValue0.toSignificant(6))
         : parseFloat(feeValue1.toSignificant(6))
       : token1Address == WETH9_EXTENDED['1']?.address
-      ? feeVal0
-      : feeVal1
+      ? parseFloat(feesArray[0]) //feeVal0
+      : parseFloat(feesArray[1]) //feeVal1
 
   const feeValueTotal = feeValueETH + feeValueToken * Pc > 0 ? feeValueETH + feeValueToken * Pc : 0
 
-  if (feeValueTotal > 0) {
-    localStorage.setItem(tokenId ? tokenId.toString() : '0', JSON.stringify([feeValueETH, feeValueToken]))
-  } else {
-    localStorage.setItem(tokenId ? tokenId.toString() : '0', '0')
-  }
   const strike = (Pb * Pa) ** 0.5
   const r = Pb > Pa ? (Pb / Pa) ** 0.5 : (Pa / Pb) ** 0.5
   const dp = Pb > Pa ? Pb - Pa : Pa - Pb
