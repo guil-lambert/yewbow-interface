@@ -479,12 +479,6 @@ export function PositionPage({
 
   const currencyQuote = inverted ? currency0 : currency1
   const currencyBase = inverted ? currency1 : currency0
-
-  //const owner = useSingleCallResult(!!tokenId ? positionManager : null, 'ownerOf', [tokenId]).result?.[0]
-  const ownsNFT = owner === account || positionDetails?.operator === account
-  const poolAddress =
-    currency0 && currency1 && feeAmount ? Pool.getAddress(currency0?.wrapped, currency1?.wrapped, feeAmount) : ' '
-
   // MOVE STUFF AB0VE THIS!!!
   const positions = useAllPositions(
     ownsIt ? (account ? account : undefined) : owner,
@@ -493,8 +487,19 @@ export function PositionPage({
     1
   )
 
-  const currentPosition =
-    tokenId && positions.positions ? positions.positions.filter((obj) => obj.id == tokenId.toString()) : 0
+  //const owner = useSingleCallResult(!!tokenId ? positionManager : null, 'ownerOf', [tokenId]).result?.[0]
+  const ownsNFT = owner === account || positionDetails?.operator === account
+  const poolAddress =
+    currency0 && currency1 && feeAmount ? Pool.getAddress(currency0?.wrapped, currency1?.wrapped, feeAmount) : ' '
+
+  const cP = tokenId && positions.positions ? positions.positions.filter((obj) => obj.id == tokenId.toString()) : 0
+  if (tokenId && cP != 0) {
+    localStorage.setItem('data-' + tokenId.toString(), JSON.stringify(cP))
+  }
+  const stringifiedPosition = localStorage.getItem(tokenId ? 'data-' + tokenId.toString() : '')
+  const positionArray = stringifiedPosition !== null ? JSON.parse(stringifiedPosition) : 0
+
+  const currentPosition = cP != 0 ? cP : positionArray
   const [depositedToken0, depositedToken1] =
     currentPosition != 0 ? [currentPosition[0].depositedToken0, currentPosition[0].depositedToken1] : [1, 1]
   //const collectedFeesToken0 = currentPosition != 0 ? currentPosition[0].collectedFeesToken0 : 1
@@ -715,7 +720,7 @@ export function PositionPage({
   const dayData = currentPosition != 0 ? currentPosition[0].pool.poolDayData : 0
   const dayData1 =
     dayData != 0
-      ? dayData.map((i) => {
+      ? dayData.map((i: any) => {
           return {
             date: i.date,
             price:
@@ -783,13 +788,13 @@ export function PositionPage({
         Pc < Pb && Pc > Pa
           ? (
               (dE * (2 * (strike * Pc * r) ** 0.5 - strike - Pc)) / (r - 1) +
-              feeValueTotal +
+              feeValueTotal -
               baseValue -
               dE * shortAmount * (Pc - startPrice)
             ).toPrecision(3)
           : Pc < Pa
           ? (dE * Pc + feeValueTotal - baseValue - dE * shortAmount * (Pc - startPrice)).toPrecision(3)
-          : (dE * strike + feeValueTotal + baseValue - dE * shortAmount * (Pc - startPrice)).toPrecision(3),
+          : (dE * strike + feeValueTotal - baseValue - dE * shortAmount * (Pc - startPrice)).toPrecision(3),
       z: 7.5,
     },
   ]
