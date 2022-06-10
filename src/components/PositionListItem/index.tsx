@@ -200,11 +200,10 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
 
   const [feeV0, feeV1] = useV3PositionFees(pool ?? undefined, positionDetails?.tokenId, false)
 
-  const stringifiedFees = localStorage.getItem(positionDetails.tokenId ? positionDetails.tokenId.toString() : '')
-  const feesArray = stringifiedFees !== null ? stringifiedFees : ''
+  const aa = localStorage.getItem(positionDetails.tokenId ? positionDetails.tokenId.toString() : '')
+  const bb = aa !== null ? aa : ''
 
-  const [feeValue0, feeValue1] =
-    !feeV0 && !feeV1 ? JSON.parse(feesArray) : [feeV0?.toSignificant(5), feeV1?.toSignificant(5)]
+  const [feeValue0, feeValue1] = !feeV0 && !feeV1 ? JSON.parse(bb) : [feeV0?.toSignificant(5), feeV1?.toSignificant(5)]
 
   const tickAtLimit = useIsTickAtLimit(feeAmount, tickLower, tickUpper)
 
@@ -223,12 +222,7 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
   //const above = formattedPrice ? formatAmount(formattedPrice) >= highPrice : undefined
 
   const removed = liquidity?.eq(0)
-  const fg =
-    feeValue0 && feeValue1
-      ? parseFloat(feeValue1) < parseFloat(feeValue0)
-        ? parseFloat(feeValue1) * 2
-        : parseFloat(feeValue0) * 2
-      : 0
+  const fg = feeValue0 && feeValue1 ? (feeValue1 < feeValue0 ? feeValue1 * 2 : feeValue0 * 2) : 0
 
   //const outOfRange: boolean = pool ? pool.tickCurrent > tickLower || pool.tickCurrent <= tickUpper : false
   const positionSummaryLink = '/pool/' + positionDetails.tokenId
