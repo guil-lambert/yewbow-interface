@@ -396,7 +396,6 @@ export function PositionPage({
 
     const amount0 = price0.quote(feeValue0Wrapped)
     const amount1 = price1.quote(feeValue1Wrapped)
-    localStorage.setItem(tokenId ? tokenId.toString() : '0', JSON.stringify(amount0.add(amount1)))
     return amount0.add(amount1)
   }, [price0, price1, feeValue0, feeValue1, tokenId])
   const position = useMemo(() => {

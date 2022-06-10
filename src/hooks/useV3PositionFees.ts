@@ -57,7 +57,6 @@ export function useV3PositionFees(
       !asWETH ? unwrappedToken(pool.token1) : pool.token1,
       amounts[1].toString()
     )
-    localStorage.setItem(tokenId.toString(), JSON.stringify([fees0, fees1]))
     return [fees0, fees1]
   } else {
     return [undefined, undefined]
