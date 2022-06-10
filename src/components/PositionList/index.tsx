@@ -53,9 +53,12 @@ export default function PositionList({ positions }: PositionListProps) {
       <MobileHeader>
         <Trans>Your positions</Trans>
       </MobileHeader>
-      {positions.map((p) => {
-        return <PositionListItem key={p.tokenId.toString()} positionDetails={p} />
-      })}
+      {positions
+        .slice(0)
+        .reverse()
+        .map((p) => {
+          return <PositionListItem key={p.tokenId.toString()} positionDetails={p} />
+        })}
     </>
   )
 }
