@@ -633,10 +633,10 @@ export function PositionPage({
         ? parseFloat(feeValue1.toSignificant(6))
         : parseFloat(feeValue0.toSignificant(6))
       : token1Address == WETH9_EXTENDED[1]?.address
-      ? !computeFees
+      ? computeFees
         ? feeVal1
         : 0
-      : !computeFees
+      : computeFees
       ? feeVal0
       : 0
 
@@ -646,10 +646,10 @@ export function PositionPage({
         ? parseFloat(feeValue0.toSignificant(6))
         : parseFloat(feeValue1.toSignificant(6))
       : token1Address == WETH9_EXTENDED[1]?.address
-      ? !computeFees
+      ? computeFees
         ? feeVal0
         : 0
-      : !computeFees
+      : computeFees
       ? feeVal1
       : 0
 
