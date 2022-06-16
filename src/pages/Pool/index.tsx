@@ -134,12 +134,13 @@ export default function Pool() {
   const { account, chainId } = useActiveWeb3React()
   const ETHprice = useUSDCPrice(WETH9_EXTENDED[1] ?? undefined)
   const toggleWalletModal = useWalletModalToggle()
+  const acct = localStorage.getItem('account')
 
   const theme = useContext(ThemeContext)
   const [userHideClosedPositions, setUserHideClosedPositions] = useUserHideClosedPositions()
 
-  const { positions, loading: positionsLoading } = useV3Positions(account)
-  const positionsGQL = useAllPositions(account?.toString(), '0x', '0', 1000)
+  const { positions, loading: positionsLoading } = useV3Positions(acct ? acct : account)
+  const positionsGQL = useAllPositions(acct ? acct : account?.toString(), '0x', '0', 1000)
 
   const [openPositions, closedPositions] = positions?.reduce<[PositionDetails[], PositionDetails[]]>(
     (acc, p) => {
@@ -232,7 +233,14 @@ export default function Pool() {
           <AutoColumn gap="lg" style={{ width: '100%' }}>
             <TitleRow style={{ marginTop: '1rem' }} padding={'0'}>
               <TYPE.body fontSize={'20px'}>
-                <Trans>Pools Overview</Trans>
+                <Trans>
+                  Pools Overview{' '}
+                  {acct ? (
+                    <TYPE.body color={theme.text3} textAlign="center">
+                      {'(Viewing ' + acct + ')'}
+                    </TYPE.body>
+                  ) : null}
+                </Trans>
               </TYPE.body>
               <ButtonRow>
                 {showV2Features && (
