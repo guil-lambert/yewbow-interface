@@ -737,7 +737,10 @@ export function PositionPage({
   const tickTVL = token0 == currencyETH ? tickX * parseFloat(ETHprice) : tickY * parseFloat(ETHprice)
 
   const startDate = currentPosition != 0 ? currentPosition[0].transaction.timestamp : undefined
-  const endDate = currentPosition != 0 ? currentPosition[0].pool.poolDayData[0].date : undefined
+  const endDate =
+    currentPosition != 0 && currentPosition[0].pool.poolDayData[0]
+      ? currentPosition[0].pool.poolDayData[0].date
+      : undefined
 
   const dayData = currentPosition != 0 ? currentPosition[0].pool.poolDayData : 0
   const dayData1 =
@@ -1068,7 +1071,7 @@ export function PositionPage({
                         Number(breakEven0).toPrecision(3),
                         Number(breakEven1).toPrecision(3),
                       ]}
-                      domain={[Math.min(Pa / r ** 2, Pc / r ** 2), Math.max(Pb * r ** 1.5, Pc * r ** 1.5)]}
+                      domain={[Math.min(Pmin / r, Pc / r), Math.max(Pmax, Pc * r ** 1.5)]}
                       type="number"
                       label={{ value: 'Price', position: 'insideBottomRight', offset: 0 }}
                     />
