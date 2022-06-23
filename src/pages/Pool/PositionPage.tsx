@@ -1009,7 +1009,7 @@ export function PositionPage({
                     <ReferenceArea
                       x1={Pa}
                       x2={Pb}
-                      y1={-Math.max(...dataPayoffY) * 3}
+                      y1={Math.min(...dataPayoffY) * 0.75}
                       y2={Math.abs(Math.max(...dataPayoffY)) * 2}
                       fillOpacity={0.15}
                       fill={inRange ? '#47b247' : '#cc333f'}
@@ -1080,7 +1080,7 @@ export function PositionPage({
                       ticks={[0, dataPc[0].y, Math.max(...dataPayoffY)]}
                       dataKey="y"
                       domain={[
-                        removed ? -1 : -Math.max(...dataPayoffY) * 3,
+                        removed ? -1 : Math.min(...dataPayoffY) * 0.75,
                         removed ? 1 : Math.max(...dataPayoffY) * 2,
                       ]}
                       label={{ value: 'Profit/Loss', angle: -90, position: 'insideLeft', offset: 5 }}
