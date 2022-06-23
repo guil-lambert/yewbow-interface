@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/macro'
-import { useCallback, useContext } from 'react'
+import { useCallback, useContext, useState } from 'react'
 import { ExternalLink as LinkIcon } from 'react-feather'
 import { useAppDispatch } from 'state/hooks'
 import styled, { ThemeContext } from 'styled-components/macro'
@@ -227,6 +227,11 @@ export default function AccountDetails({
   const { chainId, account, connector } = useActiveWeb3React()
   const theme = useContext(ThemeContext)
   const dispatch = useAppDispatch()
+  const [name, setName] = useState(account ? account : '')
+  const updateName = (event: any) => {
+    setName(event.target.value)
+    localStorage.setItem('account', event.target.value)
+  }
 
   function formatConnectorName() {
     const { ethereum } = window
@@ -303,6 +308,16 @@ export default function AccountDetails({
         </HeaderRow>
         <AccountSection>
           <YourAccount>
+            <InfoCard>
+              <AccountGroupingRow>
+                <Trans>View as:</Trans>
+              </AccountGroupingRow>
+              <div>
+                <form>
+                  <input size={35} type="text" value={name} onChange={updateName} placeholder="Enter account address" />
+                </form>
+              </div>
+            </InfoCard>
             <InfoCard>
               <AccountGroupingRow>
                 {formatConnectorName()}
