@@ -373,7 +373,6 @@ export function PositionPage({
 
   // flag for receiving WETH
   const [receiveWETH, setReceiveWETH] = useState(true)
-  const [computeFees, setComputeFees] = useState(false)
   const currency0 = token0 ? token0 : undefined
   const currency1 = token1 ? token1 : undefined
 
@@ -381,6 +380,7 @@ export function PositionPage({
   const [poolState, pool] = usePool(token0 ?? undefined, token1 ?? undefined, feeAmount)
   const [feeValue0, feeValue1] = useV3PositionFees(pool ?? undefined, positionDetails?.tokenId, receiveWETH)
 
+  const [computeFees, setComputeFees] = useState(feeValue0 ? false : true)
   const [radioState, setradioState] = useState('')
   const [collecting, setCollecting] = useState<boolean>(false)
   const [collectMigrationHash, setCollectMigrationHash] = useState<string | null>(null)
@@ -612,7 +612,7 @@ export function PositionPage({
       ? ((feeGuts1 + parseInt(feeGrowthLast1.toString())) * positionLiquidity) / (2 ** 128 * 10 ** dec1)
       : ((feeGuts1 - feeGrowthInside1LastX128) * positionLiquidity) / (2 ** 128 * 10 ** dec1)
 
-  const [feeVal0, feeVal1] = token1Address == WETH9_EXTENDED[1]?.address ? [fV1, fV0] : [fV0, fV1]
+  const [feeVal0, feeVal1] = [fV0, fV1]
 
   const LiqValueTotal =
     position && chainId
@@ -628,29 +628,25 @@ export function PositionPage({
       : 0
 
   const feeValueETH =
-    feeValue0 && feeValue1 && chainId
+    feeValue0 && feeValue1 && chainId && !computeFees
       ? token1Address == WETH9_EXTENDED[chainId]?.address
         ? parseFloat(feeValue1.toSignificant(6))
         : parseFloat(feeValue0.toSignificant(6))
-      : token1Address == WETH9_EXTENDED[1]?.address
-      ? computeFees
-        ? feeVal1
-        : 0
       : computeFees
-      ? feeVal0
+      ? token1Address == WETH9_EXTENDED[1]?.address
+        ? feeVal1
+        : feeVal0
       : 0
 
   const feeValueToken =
-    feeValue0 && feeValue1 && chainId
+    feeValue0 && feeValue1 && chainId && !computeFees
       ? token1Address == WETH9_EXTENDED[chainId]?.address
         ? parseFloat(feeValue0.toSignificant(6))
         : parseFloat(feeValue1.toSignificant(6))
-      : token1Address == WETH9_EXTENDED[1]?.address
-      ? computeFees
-        ? feeVal0
-        : 0
       : computeFees
-      ? feeVal1
+      ? token1Address == WETH9_EXTENDED[1]?.address
+        ? feeVal0
+        : feeVal1
       : 0
 
   const strike = (Pb * Pa) ** 0.5
@@ -742,7 +738,7 @@ export function PositionPage({
       ? currentPosition[0].pool.poolDayData[0].date
       : undefined
 
-  const dayData = currentPosition != 0 ? currentPosition[0].pool.poolDayData : 0
+  const dayData = currentPosition != 0 ? currentPosition[0].pool.poolDayData.slice(0, 180) : 0
   const dayData1 =
     dayData != 0
       ? dayData.map((i: any) => {
@@ -1256,12 +1252,12 @@ export function PositionPage({
                       <TYPE.largeHeader color={theme.blue2} fontSize="24px" fontWeight={500}>
                         <ResponsiveRow>
                           <RowFixed>
-                            <Trans>${(parseFloat(ETHprice) * (feeVal0 + Pc * feeVal1)).toFixed(2)}</Trans>
+                            <Trans>${(parseFloat(ETHprice) * (feeValueETH + feeValueToken * Pc)).toFixed(2)}</Trans>
                           </RowFixed>
                           <RowFixed>
                             <Trans>
                               <CurrencyLogo currency={currencyETH} size={'20px'} style={{ marginRight: '0.5rem' }} />
-                              {(feeVal0 + Pc * feeVal1).toPrecision(3)}
+                              {(feeValueETH + feeValueToken * Pc).toPrecision(3)}
                             </Trans>
                           </RowFixed>
                         </ResponsiveRow>
