@@ -108,7 +108,7 @@ const PrimaryPositionIdData = styled.div`
   display: grid;
   grid-gap: 3em;
   align-items: center;
-  grid-template-columns: 0.5fr 1fr 0.5fr 300px 2.5fr 2fr 2fr 2.5fr 2.5fr;
+  grid-template-columns: 0.5fr 1fr 0.5fr 300px 2.5fr 2fr 2fr 2fr 2fr 2fr;
   > * {
     margin-right: 0px;
   }
@@ -257,6 +257,11 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
       : 0
     : 0
 
+  const positionValue = position
+    ? position.pool.token0.address == WETH9_EXTENDED[1].address
+      ? (parseFloat(position.amount0.toFixed(6)) + parseFloat(position.amount1.toFixed(6)) / currentPrice).toFixed(2)
+      : (parseFloat(position.amount1.toFixed(6)) + parseFloat(position.amount0.toFixed(6)) * currentPrice).toFixed(2)
+    : '1'
   return (
     <LinkRow to={positionSummaryLink}>
       <RowBetween>
@@ -419,28 +424,24 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
             </svg>
           </Label>
           <Label end={1} fontWeight={400}>
+            Value:
+            <br />
+            {''}
+            {positionValue} ETH
+          </Label>
+          <Label end={1} fontWeight={400}>
             Uncollected fees:
             <br />
             {''}
             {''} {fg ? fg.toFixed(2) : '-'}
-            {''} ETH (
-            <Trans>
-              {fg && yMax / Pc + xMax > 0
-                ? ((100 * parseFloat(fg.toSignificant(5))) / (yMax / Pc + xMax)).toFixed(1)
-                : '-'}
-              %
-            </Trans>
-            )
+            {''} ETH
           </Label>
           <Label end={1} fontWeight={400}>
             Delta:{(delta * 100).toFixed(0)}
           </Label>
           <Label end={1} fontWeight={400}>
             Returns:
-            {formattedPrice < Plower
-              ? ((100 * Pupper) / Plower - 100).toFixed(0)
-              : ((100 * Pupper) / formattedPrice - 100).toFixed(0)}
-            %
+            {fg ? ((parseFloat(fg.toFixed(6)) * 100) / parseFloat(positionValue)).toFixed(2) : '-'}%
           </Label>
           <Label>{''}</Label>
           <Label>

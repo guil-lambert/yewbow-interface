@@ -380,7 +380,7 @@ export function PositionPage({
   const [poolState, pool] = usePool(token0 ?? undefined, token1 ?? undefined, feeAmount)
   const [feeValue0, feeValue1] = useV3PositionFees(pool ?? undefined, positionDetails?.tokenId, receiveWETH)
 
-  const [computeFees, setComputeFees] = useState(feeValue0 ? false : true)
+  const [computeFees, setComputeFees] = useState(false)
   const [radioState, setradioState] = useState('')
   const [collecting, setCollecting] = useState<boolean>(false)
   const [collectMigrationHash, setCollectMigrationHash] = useState<string | null>(null)
