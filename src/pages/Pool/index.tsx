@@ -14,7 +14,7 @@ import { WETH9_EXTENDED } from 'constants/tokens'
 import useUSDCPrice from 'hooks/useUSDCPrice'
 import { useAllPositions, useV3Positions } from 'hooks/useV3Positions'
 import { useActiveWeb3React } from 'hooks/web3'
-import { useContext } from 'react'
+import { useContext, useState } from 'react'
 import { BookOpen, ChevronDown, ChevronsRight, Inbox, Layers, PlusCircle } from 'react-feather'
 import { Link } from 'react-router-dom'
 import { useWalletModalToggle } from 'state/application/hooks'
@@ -135,6 +135,12 @@ export default function Pool() {
   const ETHprice = useUSDCPrice(WETH9_EXTENDED[1] ?? undefined)
   const toggleWalletModal = useWalletModalToggle()
   const acct = localStorage.getItem('account')
+
+  const [name, setName] = useState(account ? account : '')
+  const updateName = (event: any) => {
+    setName(event.target.value)
+    localStorage.setItem('account', event.target.value)
+  }
 
   const theme = useContext(ThemeContext)
   const [userHideClosedPositions, setUserHideClosedPositions] = useUserHideClosedPositions()
@@ -266,7 +272,6 @@ export default function Pool() {
                 </ResponsiveButtonPrimary>
               </ButtonRow>
             </TitleRow>
-
             <HideSmall>
               <NetworkAlert thin />
               <DowntimeWarning />
@@ -313,10 +318,25 @@ export default function Pool() {
                       <Trans>Connect a wallet</Trans>
                     </ButtonPrimary>
                   )}
+                  <br />
+                  <br />
+                  <Trans>View as:</Trans>
+                  <br />
+                  <br />
+                  <div>
+                    <form>
+                      <input
+                        size={35}
+                        type="text"
+                        value={name}
+                        onChange={updateName}
+                        placeholder="Enter account address"
+                      />
+                    </form>
+                  </div>
                 </NoLiquidity>
               )}
             </MainContentWrapper>
-
             <ResponsiveRow>
               {showV2Features && (
                 <RowFixed>
@@ -371,6 +391,12 @@ export default function Pool() {
                 </ShowInactiveToggle>
               ) : null}
             </ResponsiveRow>
+            <div>View as:</div>
+            <div>
+              <form>
+                <input size={35} type="text" value={name} onChange={updateName} placeholder="Enter account address" />
+              </form>
+            </div>
           </AutoColumn>
         </AutoColumn>
       </PageWrapper>
