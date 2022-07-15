@@ -1,4 +1,3 @@
-import { Trans } from '@lingui/macro'
 import { Percent, Price, Token } from '@uniswap/sdk-core'
 import { Position } from '@uniswap/v3-sdk'
 import RangeBadge from 'components/Badge/RangeBadge'
@@ -242,20 +241,6 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
   const delta = Pc < Pupper && Pc > Plower ? 1 - (((strike * r) / Pc) ** 0.5 - 1) / (r - 1) : Pc < Plower ? 0 : 1
   const decs0 = pool ? pool.token0.decimals : 0
   const decs1 = pool ? pool.token1.decimals : 0
-  const yMax = liquidity
-    ? Pc > Pb
-      ? Math.abs(parseFloat(liquidity.toString()) * (Pb ** 0.5 - Pa ** 0.5)) / 10 ** (decs0 / 2 + decs1 / 2)
-      : Pc > Pa
-      ? Math.abs(parseFloat(liquidity.toString()) * (Pc ** 0.5 - Pa ** 0.5)) / 10 ** (decs0 / 2 + decs1 / 2)
-      : 0
-    : 0
-  const xMax = liquidity
-    ? Pc < Pa
-      ? Math.abs(parseFloat(liquidity.toString()) * (Pa ** -0.5 - Pb ** -0.5)) / 10 ** (decs0 / 2 + decs1 / 2)
-      : Pc < Pb
-      ? Math.abs(parseFloat(liquidity.toString()) * (Pc ** -0.5 - Pb ** -0.5)) / 10 ** (decs0 / 2 + decs1 / 2)
-      : 0
-    : 0
 
   const positionValue = position
     ? position.pool.token0.address == WETH9_EXTENDED[1].address
@@ -433,7 +418,7 @@ export default function PositionListItem({ positionDetails }: PositionListItemPr
             Uncollected fees:
             <br />
             {''}
-            {''} {fg ? fg.toFixed(2) : '-'}
+            {''} {fg ? fg.toFixed(3) : '-'}
             {''} ETH
           </Label>
           <Label end={1} fontWeight={400}>

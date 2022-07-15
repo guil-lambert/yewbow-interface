@@ -352,7 +352,7 @@ export function PositionPage({
   const owner = useSingleCallResult(!!tokenId ? positionManager : null, 'ownerOf', [tokenId]).result?.[0]
   const ownsIt = account ? (owner === account ? true : false) : false
   const positions = useAllPositions(
-    ownsIt ? (account ? account : undefined) : owner,
+    ownsIt ? (account ? account : owner) : owner,
     '0x',
     tokenId ? tokenId.toString() : '0',
     1
