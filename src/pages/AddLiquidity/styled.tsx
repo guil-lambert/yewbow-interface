@@ -5,7 +5,7 @@ import { BodyWrapper } from 'pages/AppBody'
 import styled from 'styled-components/macro'
 
 export const PageWrapper = styled(BodyWrapper)<{ wide: boolean }>`
-  max-width: ${({ wide }) => (wide ? '1920px' : '480px')};
+  max-width: ${({ wide }) => (wide ? '1440px' : '480px')};
   width: 100%;
 
   padding: ${({ wide }) => (wide ? '10px' : '0')};

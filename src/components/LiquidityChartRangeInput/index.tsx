@@ -104,6 +104,9 @@ export default function LiquidityChartRangeInput({
 
   const onBrushDomainChangeEnded = useCallback(
     (domain, mode) => {
+      if (domain[0] > domain[1]) {
+        domain = [domain[1], domain[0]]
+      }
       let leftRangeValue = Number(domain[0])
       const rightRangeValue = Number(domain[1])
 

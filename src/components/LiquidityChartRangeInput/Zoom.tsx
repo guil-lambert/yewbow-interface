@@ -97,6 +97,10 @@ export default function Zoom({
         [0, 0],
         [width, height],
       ])
+      .translateExtent([
+        [-width * 0.66, 0],
+        [100000, height],
+      ])
       .on('zoom', ({ transform }: { transform: ZoomTransform }) => setZoom(transform))
 
     select(svg as Element).call(zoomBehavior.current)

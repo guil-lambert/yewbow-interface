@@ -36,7 +36,7 @@ export function Chart({
 
   const { xScale, yScale } = useMemo(() => {
     const scales = {
-      xScale: scaleLog()
+      xScale: scaleLinear()
         .domain([current * zoomLevels.initialMin, current * zoomLevels.initialMax] as number[])
         .range([1, innerWidth]),
       yScale: scaleLinear()
@@ -80,7 +80,7 @@ export function Chart({
             'reset'
           )
         }}
-        showResetButton={Boolean(ticksAtLimit[Bound.LOWER] || ticksAtLimit[Bound.UPPER])}
+        showResetButton={Boolean(ticksAtLimit[Bound.LOWER] || ticksAtLimit[Bound.UPPER] || true)}
         zoomLevels={zoomLevels}
       />
       <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>

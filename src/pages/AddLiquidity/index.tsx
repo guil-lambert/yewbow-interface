@@ -3,14 +3,30 @@ import { TransactionResponse } from '@ethersproject/providers'
 import { Trans } from '@lingui/macro'
 import { Currency, CurrencyAmount, Percent } from '@uniswap/sdk-core'
 import { FeeAmount, NonfungiblePositionManager, Pool } from '@uniswap/v3-sdk'
+import { DarkCard, LightCard } from 'components/Card'
 import DowntimeWarning from 'components/DowntimeWarning'
+import Loader from 'components/Loader'
 import UnsupportedCurrencyFooter from 'components/swap/UnsupportedCurrencyFooter'
 import { erf, log } from 'mathjs'
 import { useCallback, useContext, useEffect, useState } from 'react'
+import Collapsible from 'react-collapsible'
 import { AlertTriangle } from 'react-feather'
 import ReactGA from 'react-ga'
 import { Link, RouteComponentProps } from 'react-router-dom'
 import { Text } from 'rebass'
+import {
+  Area,
+  ComposedChart,
+  LabelList,
+  Line,
+  ReferenceArea,
+  ReferenceLine,
+  Scatter,
+  Tooltip,
+  XAxis,
+  YAxis,
+  ZAxis,
+} from 'recharts'
 import {
   useRangeHopCallbacks,
   useV3DerivedMintInfo,
@@ -32,6 +48,7 @@ import RangeSelector from '../../components/RangeSelector'
 import PresetsButtons from '../../components/RangeSelector/PresetsButtons'
 import RateToggle from '../../components/RateToggle'
 import Row, { AutoRow, RowBetween, RowFixed } from '../../components/Row'
+import Slider from '../../components/Slider'
 import { SwitchLocaleLink } from '../../components/SwitchLocaleLink'
 import TransactionConfirmationModal, { ConfirmationModalContent } from '../../components/TransactionConfirmationModal'
 import { NONFUNGIBLE_POSITION_MANAGER_ADDRESSES } from '../../constants/addresses'
@@ -42,6 +59,7 @@ import { useCurrency } from '../../hooks/Tokens'
 import { ApprovalState, useApproveCallback } from '../../hooks/useApproveCallback'
 import { useArgentWalletContract } from '../../hooks/useArgentWalletContract'
 import { useV3NFTPositionManagerContract } from '../../hooks/useContract'
+import useDebouncedChangeHandler from '../../hooks/useDebouncedChangeHandler'
 import { useDerivedPositionInfo } from '../../hooks/useDerivedPositionInfo'
 import { useIsSwapUnsupported } from '../../hooks/useIsSwapUnsupported'
 import useTransactionDeadline from '../../hooks/useTransactionDeadline'
@@ -59,7 +77,7 @@ import approveAmountCalldata from '../../utils/approveAmountCalldata'
 import { calculateGasMargin } from '../../utils/calculateGasMargin'
 import { currencyId } from '../../utils/currencyId'
 import { maxAmountSpend } from '../../utils/maxAmountSpend'
-import { Dots } from '../Pool/styleds'
+import { Dots, MaxButton } from '../Pool/styleds'
 import { Review } from './Review'
 import {
   CurrencyDropdown,
@@ -176,6 +194,28 @@ export default function AddLiquidity({
   const volumeUSD = dayData != 0 ? dayData[0].volumeUSD : 1
   const volatility =
     currentPosition != 0 ? (2 * currentPosition[0].pool.feeTier * (volumeUSD / tickTVL) ** 0.5) / 1000000 : 0
+
+  // Data
+  const startDate = currentPosition != 0 ? currentPosition[0].transaction.timestamp : undefined
+  const endDate =
+    currentPosition != 0 && currentPosition[0].pool.poolDayData[0]
+      ? currentPosition[0].pool.poolDayData[0].date
+      : undefined
+
+  const dayData0 = currentPosition != 0 ? currentPosition[0].pool.poolDayData.slice(0, 180) : 0
+  const dayData1 =
+    dayData0 != 0
+      ? dayData0.map((i: any) => {
+          return {
+            date: i.date,
+            price: invertPrice ? parseFloat(i.token0Price).toPrecision(4) : parseFloat(i.token1Price).toPrecision(4),
+          }
+        })
+      : [{ date: 0, price: 0 }]
+
+  const minPrice = Math.min(...dayData1.map((i) => Number(i.price)))
+  const maxPrice = Math.max(...dayData1.map((i) => Number(i.price)))
+
   // modal and loading
   const [showConfirm, setShowConfirm] = useState<boolean>(false)
   const [attemptingTxn, setAttemptingTxn] = useState<boolean>(false) // clicked confirm
@@ -393,6 +433,16 @@ export default function AddLiquidity({
     }
   }
 
+  const setPriceStrike = useCallback(
+    (strike: number, range: number) => {
+      const priceLower = strike / range
+      const priceUpper = strike * range
+      onLeftRangeInput(priceLower > priceUpper ? strike.toString() : priceLower.toString())
+      onRightRangeInput(priceUpper < priceLower ? strike.toString() : priceUpper.toString())
+    },
+    [onLeftRangeInput, onRightRangeInput]
+  )
+
   const setPriceRange = useCallback(
     (tickLower: number, tickUpper: number, invertPrice: boolean) => {
       const priceLower = invertPrice ? (1.0001 ** -tickUpper).toString() : (1.0001 ** tickLower).toString()
@@ -496,13 +546,77 @@ export default function AddLiquidity({
     useRangeHopCallbacks(baseCurrency ?? undefined, quoteCurrency ?? undefined, feeAmount, tickLower, tickUpper, pool)
 
   const currentPrice = price ? parseFloat((invertPrice ? price.invert() : price).toSignificant(10)) : 1
+  const cTick = price ? Number((Math.log(currentPrice) / Math.log(1.0001)).toFixed(0)) : 0
+  const currentTick = invertPrice ? -cTick : cTick
   const upperPrice = priceUpper ? parseFloat((invertPrice ? priceUpper.invert() : priceUpper).toSignificant(10)) : 1
   const lowerPrice = priceLower ? parseFloat((invertPrice ? priceLower.invert() : priceLower).toSignificant(10)) : 1
   const strike = (upperPrice * lowerPrice) ** 0.5
   const r = upperPrice > lowerPrice ? (upperPrice / lowerPrice) ** 0.5 : (lowerPrice / upperPrice) ** 0.5
+  const tickSpacing = feeAmount ? feeAmount / 50 : 10
   const dte = (((2 * 3.1416) / volatility ** 2) * (r ** 0.5 - 1) ** 2) / (r ** 0.5 + 1) ** 2
+  const dte15 = (((2 * 3.1416) / volatility ** 2) * (1.15 ** 0.5 - 1) ** 2) / (1.15 ** 0.5 + 1) ** 2
   const delta =
     0.5 - 0.5 * erf((log(currentPrice / strike) + (dte / 2) * volatility ** 2) / (volatility * (2 * dte) ** 0.5))
+
+  const Pc = price ? parseFloat((invertPrice ? price.invert() : price).toSignificant(10)) : 1
+  const Pa = lowerPrice < upperPrice ? lowerPrice : upperPrice
+  const Pb = upperPrice > lowerPrice ? upperPrice : lowerPrice
+  const Pmax = Pc * 2
+  const Pmin = Pc / 2
+  const startPrice = currentPrice
+  const inRange = Pa < Pc && Pc < Pb
+
+  const dL =
+    Pc > Pa && Pc < Pb
+      ? 1 / (Pc ** 0.5 - Pa ** 0.5)
+      : Pc < Pa
+      ? 1 / (Pa ** -0.5 - Pb ** -0.5)
+      : 1 / (Pb ** 0.5 - Pa ** 0.5)
+
+  const dE =
+    currentPrice < Pb
+      ? (dL * (Pb ** 0.5 - startPrice ** 0.5)) / (Pb * startPrice) ** 0.5
+      : (dL * (startPrice ** 0.5 - Pa ** 0.5)) / startPrice
+
+  const baseValue =
+    startPrice < Pb && startPrice > Pa
+      ? (dE * (2 * (strike * startPrice * r) ** 0.5 - strike - startPrice)) / (r - 1)
+      : startPrice <= Pa
+      ? dE * startPrice
+      : (dE * (2 * (strike * Pb * r) ** 0.5 - strike - Pb)) / (r - 1)
+
+  const nPt = 192
+  const dataPayoff: any[] = []
+  for (let pt = 0; pt <= nPt; pt++) {
+    const xx = ((Pmax * r - Pmin / r) * pt) / nPt + Pmin / r
+    const yy =
+      xx < Pa
+        ? dE * xx - baseValue
+        : xx >= Pa && xx < Pb
+        ? (dE * (2 * (strike * xx * r) ** 0.5 - strike - xx)) / (r - 1) - baseValue
+        : xx >= Pb
+        ? dE * strike - baseValue
+        : 0
+    dataPayoff.push({ x: xx.toPrecision(5), y: yy.toPrecision(5) })
+  }
+
+  const minPnL = Math.min(...dataPayoff.map((i) => parseFloat(i.y)))
+  const maxPnL = Math.max(...dataPayoff.map((i) => parseFloat(i.y)))
+
+  const gradientOffset = () => {
+    const dataMax = Math.max(...dataPayoff.map((i) => parseFloat(i.y)))
+    const dataMin = Math.min(...dataPayoff.map((i) => parseFloat(i.y)))
+
+    if (dataMax <= 0) {
+      return 0
+    }
+    if (dataMin >= 0) {
+      return 1
+    }
+
+    return dataMax / (dataMax - dataMin)
+  }
+  const off = gradientOffset()
   // we need an existence check on parsed amounts for single-asset deposits
   const showApprovalA =
     !argentWalletContract && approvalA !== ApprovalState.APPROVED && !!parsedAmounts[Field.CURRENCY_A]
@@ -635,7 +749,7 @@ export default function AddLiquidity({
           )}
           pendingText={pendingText}
         />
-        <PageWrapper wide={!hasExistingPosition}>
+        <PageWrapper wide={true}>
           <AddRemoveTabs
             creating={false}
             adding={true}
@@ -672,7 +786,7 @@ export default function AddLiquidity({
             )}
           </AddRemoveTabs>
           {!hasExistingPosition ? (
-            <PageWrapper wide={true}>
+            <Collapsible trigger="+ Click to Show Existing positions" triggerWhenOpen="">
               <RowBetween>
                 <TYPE.label>
                   <Trans>Existing Positions:</Trans>
@@ -708,10 +822,10 @@ export default function AddLiquidity({
                     )
                   })
                 : '0x'}
-            </PageWrapper>
+            </Collapsible>
           ) : null}
           <Wrapper>
-            <ResponsiveTwoColumns wide={!hasExistingPosition}>
+            <ResponsiveTwoColumns wide={true}>
               <AutoColumn gap="lg">
                 {!hasExistingPosition && (
                   <>
@@ -761,6 +875,127 @@ export default function AddLiquidity({
                         currencyB={quoteCurrency ?? undefined}
                       />
                     </AutoColumn>{' '}
+                    <>
+                      <RowBetween paddingBottom="20px">
+                        <TYPE.label>
+                          <Trans>Select Strike</Trans>
+                        </TYPE.label>
+                      </RowBetween>
+                      <RowBetween>
+                        <MaxButton onClick={() => setPriceStrike(strike / 1.0001 ** (5 * tickSpacing), r)} width="20%">
+                          ←←
+                        </MaxButton>
+                        <MaxButton onClick={() => setPriceStrike(strike / 1.0001 ** tickSpacing, r)} width="20%">
+                          ←
+                        </MaxButton>
+                        <MaxButton onClick={() => setPriceStrike(Pc, r)} width="20%">
+                          Current Price
+                        </MaxButton>
+                        <MaxButton onClick={() => setPriceStrike(strike * 1.0001 ** tickSpacing, r)} width="20%">
+                          →
+                        </MaxButton>
+                        <MaxButton onClick={() => setPriceStrike(strike * 1.0001 ** (5 * tickSpacing), r)} width="20%">
+                          →→
+                        </MaxButton>
+                      </RowBetween>
+                      <RowBetween paddingBottom="20px">
+                        <TYPE.label>
+                          <Trans>Select Width</Trans>
+                        </TYPE.label>
+                      </RowBetween>
+                      <RowBetween>
+                        <MaxButton onClick={() => setPriceStrike(strike, r / 1.0001 ** (10 * tickSpacing))} width="20%">
+                          →→ ←←
+                        </MaxButton>
+                        <MaxButton onClick={() => setPriceStrike(strike, r / 1.0001 ** tickSpacing)} width="20%">
+                          → ←
+                        </MaxButton>
+                        <MaxButton onClick={() => setPriceStrike(strike, 1.15)} width="20%">
+                          ±15%
+                          <br />({dte15 > 1 ? (dte < 100000 ? dte15.toFixed(0) : '-') : '<1'} dte)
+                        </MaxButton>
+                        <MaxButton onClick={() => setPriceStrike(strike, r * 1.0001 ** tickSpacing)} width="20%">
+                          ← →
+                        </MaxButton>
+                        <MaxButton onClick={() => setPriceStrike(strike, r * 1.0001 ** (10 * tickSpacing))} width="20%">
+                          ←← →→
+                        </MaxButton>
+                      </RowBetween>
+                      <RowBetween paddingBottom="20px">
+                        <TYPE.label>
+                          <Trans>PnL Graph</Trans>
+                        </TYPE.label>
+                      </RowBetween>
+                      <RowBetween paddingBottom="20px">
+                        <ComposedChart
+                          width={500}
+                          height={300}
+                          margin={{ top: 20, left: 20, right: 20, bottom: 50 }}
+                          data={dataPayoff}
+                        >
+                          <defs>
+                            <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset={off} stopColor="green" stopOpacity={1} />
+                              <stop offset={off} stopColor="red" stopOpacity={1} />
+                            </linearGradient>
+                          </defs>
+                          <Area
+                            type="basis"
+                            isAnimationActive={false}
+                            dataKey="y"
+                            stroke="#000"
+                            fill="url(#splitColor)"
+                            activeDot={false}
+                          />
+                          <Tooltip
+                            allowEscapeViewBox={{
+                              x: true,
+                              y: true,
+                            }}
+                            position={{ x: 238, y: 225 }}
+                            coordinate={{ x: -100, y: 10 }}
+                            cursor={{ stroke: 'red', strokeWidth: 1 }}
+                          />
+                          <ReferenceLine x={Pc} stroke="#231f20" />
+                          <ReferenceLine x={strike} stroke="#231f20" strokeDasharray="2 3" />
+                          <ReferenceLine x={Pa} stroke="#000" strokeDasharray="3 5" />
+                          <ReferenceLine x={Pb} stroke="#000" strokeDasharray="3 5" />
+                          <ReferenceLine y={0} stroke="#000" />
+                          <ReferenceArea
+                            x1={Pa}
+                            x2={Pb}
+                            y1={minPnL}
+                            y2={-minPnL * 0.25}
+                            fillOpacity={0.075}
+                            fill={inRange ? '#47b247' : '#cc333f'}
+                          />
+                          <XAxis
+                            dataKey="x"
+                            name="Price"
+                            textAnchor="end"
+                            interval={0}
+                            allowDataOverflow={true}
+                            allowDuplicatedCategory={false}
+                            angle={-45}
+                            tick={{ fontSize: 10 }}
+                            ticks={[Pa.toPrecision(5), Pc.toPrecision(5), Pb.toPrecision(5)]}
+                            domain={[Pc / 2, Pc * 2]}
+                            type="number"
+                            label={{ value: 'Price', position: 'insideBottomRight', offset: 0 }}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 10 }}
+                            allowDecimals={false}
+                            interval={0}
+                            allowDataOverflow={true}
+                            dataKey="y"
+                            ticks={[0, Math.max(...dataPayoff)]}
+                            domain={[minPnL, -minPnL * 0.25]}
+                            label={{ value: 'Profit/Loss', angle: -90, position: 'insideLeft', offset: 5 }}
+                          />
+                        </ComposedChart>
+                      </RowBetween>
+                    </>
                   </>
                 )}
                 {hasExistingPosition && existingPosition && (
@@ -772,45 +1007,6 @@ export default function AddLiquidity({
                   />
                 )}
               </AutoColumn>
-              <div>
-                <DynamicSection
-                  disabled={tickLower === undefined || tickUpper === undefined || invalidPool || invalidRange}
-                >
-                  <AutoColumn gap="md">
-                    <TYPE.label>
-                      {hasExistingPosition ? <Trans>Add more liquidity</Trans> : <Trans>Deposit Amounts</Trans>}
-                    </TYPE.label>
-
-                    <CurrencyInputPanel
-                      value={formattedAmounts[Field.CURRENCY_A]}
-                      onUserInput={onFieldAInput}
-                      onMax={() => {
-                        onFieldAInput(maxAmounts[Field.CURRENCY_A]?.toExact() ?? '')
-                      }}
-                      showMaxButton={!atMaxAmounts[Field.CURRENCY_A]}
-                      currency={currencies[Field.CURRENCY_A] ?? null}
-                      id="add-liquidity-input-tokena"
-                      fiatValue={usdcValues[Field.CURRENCY_A]}
-                      showCommonBases
-                      locked={depositADisabled}
-                    />
-
-                    <CurrencyInputPanel
-                      value={formattedAmounts[Field.CURRENCY_B]}
-                      onUserInput={onFieldBInput}
-                      onMax={() => {
-                        onFieldBInput(maxAmounts[Field.CURRENCY_B]?.toExact() ?? '')
-                      }}
-                      showMaxButton={!atMaxAmounts[Field.CURRENCY_B]}
-                      fiatValue={usdcValues[Field.CURRENCY_B]}
-                      currency={currencies[Field.CURRENCY_B] ?? null}
-                      id="add-liquidity-input-tokenb"
-                      showCommonBases
-                      locked={depositBDisabled}
-                    />
-                  </AutoColumn>
-                </DynamicSection>
-              </div>
               {!hasExistingPosition ? (
                 <>
                   <HideMedium>
@@ -866,7 +1062,7 @@ export default function AddLiquidity({
                             priceUpper={priceUpper}
                             onLeftRangeInput={onLeftRangeInput}
                             onRightRangeInput={onRightRangeInput}
-                            interactive={!hasExistingPosition}
+                            interactive={!hasExistingPosition ? true : false}
                           />
                         </>
                       ) : (
@@ -966,70 +1162,33 @@ export default function AddLiquidity({
                               feeAmount={feeAmount}
                               ticksAtLimit={ticksAtLimit}
                             />
-                            {!noLiquidity && (
-                              <PresetsButtons
-                                setFullRange={() => {
-                                  setShowCapitalEfficiencyWarning(true)
-                                }}
+                            <ComposedChart
+                              width={800}
+                              height={200}
+                              margin={{ top: 20, left: 40, right: 20, bottom: 30 }}
+                              data={dayData1}
+                            >
+                              <XAxis
+                                dataKey="date"
+                                ticks={[startDate - (startDate % 86400)]}
+                                reversed={true}
+                                allowDataOverflow={true}
                               />
-                            )}
+                              <YAxis
+                                dataKey="price"
+                                domain={[minPrice / 1.5, maxPrice * 1.5]}
+                                tick={{ fontSize: 10 }}
+                                ticks={[Pa.toPrecision(3), Pc.toPrecision(3), Pb.toPrecision(3)]}
+                              />
+                              <ReferenceArea y1={Pb} y2={Pa} fillOpacity={0.075} fill={'#47b247'} />
+                              <ReferenceLine y={Pc} stroke="#000" strokeDasharray="2 3" />
+                              <ReferenceLine y={lowerPrice} stroke="#000" strokeDasharray="3 5" />
+                              <ReferenceLine y={upperPrice} stroke="#000" strokeDasharray="3 5" />
+                              <Line data={dayData1} dataKey="price" dot={false} color="#56B2A4" />
+                              <Tooltip labelFormatter={(t) => new Date(t * 1000).toLocaleDateString('en-CA')} />
+                            </ComposedChart>
                           </AutoColumn>
                         </StackedItem>
-
-                        {showCapitalEfficiencyWarning && (
-                          <StackedItem zIndex={1}>
-                            <YellowCard
-                              padding="15px"
-                              $borderRadius="12px"
-                              height="100%"
-                              style={{
-                                borderColor: theme.yellow3,
-                                border: '1px solid',
-                              }}
-                            >
-                              <AutoColumn gap="8px" style={{ height: '100%' }}>
-                                <RowFixed>
-                                  <AlertTriangle stroke={theme.yellow3} size="16px" />
-                                  <TYPE.yellow ml="12px" fontSize="15px">
-                                    <Trans>Efficiency Comparison</Trans>
-                                  </TYPE.yellow>
-                                </RowFixed>
-                                <RowFixed>
-                                  <TYPE.yellow ml="12px" fontSize="13px" margin={0} fontWeight={400}>
-                                    <Trans>
-                                      Full range positions may earn less fees than concentrated positions. Learn more{' '}
-                                      <ExternalLink
-                                        style={{ color: theme.yellow3, textDecoration: 'underline' }}
-                                        href={
-                                          'https://help.uniswap.org/en/articles/5434296-can-i-provide-liquidity-over-the-full-range-in-v3'
-                                        }
-                                      >
-                                        here
-                                      </ExternalLink>
-                                      .
-                                    </Trans>
-                                  </TYPE.yellow>
-                                </RowFixed>
-                                <Row>
-                                  <ButtonYellow
-                                    padding="8px"
-                                    marginRight="8px"
-                                    $borderRadius="8px"
-                                    width="auto"
-                                    onClick={() => {
-                                      setShowCapitalEfficiencyWarning(false)
-                                      getSetFullRange()
-                                    }}
-                                  >
-                                    <TYPE.black fontSize={13} color="black">
-                                      <Trans>I understand</Trans>
-                                    </TYPE.black>
-                                  </ButtonYellow>
-                                </Row>
-                              </AutoColumn>
-                            </YellowCard>
-                          </StackedItem>
-                        )}
                       </StackedContainer>
 
                       {outOfRange ? (
@@ -1057,16 +1216,55 @@ export default function AddLiquidity({
                         </YellowCard>
                       ) : null}
                     </DynamicSection>
-
-                    <MediumOnly>
-                      <Buttons />
-                    </MediumOnly>
                   </RightContainer>
                 </>
               ) : (
                 <Buttons />
               )}
             </ResponsiveTwoColumns>
+            <DynamicSection
+              gap="md"
+              disabled={tickLower === undefined || tickUpper === undefined || invalidPool || invalidRange}
+            >
+              <AutoColumn gap={'md'}>
+                <TYPE.label>
+                  {hasExistingPosition ? <Trans>Add more liquidity</Trans> : <Trans>Deposit Amounts</Trans>}
+                </TYPE.label>
+
+                <CurrencyInputPanel
+                  value={formattedAmounts[Field.CURRENCY_A]}
+                  onUserInput={onFieldAInput}
+                  onMax={() => {
+                    onFieldAInput(maxAmounts[Field.CURRENCY_A]?.toExact() ?? '')
+                  }}
+                  showMaxButton={!atMaxAmounts[Field.CURRENCY_A]}
+                  currency={currencies[Field.CURRENCY_A] ?? null}
+                  id="add-liquidity-input-tokena"
+                  fiatValue={usdcValues[Field.CURRENCY_A]}
+                  showCommonBases
+                  locked={depositADisabled}
+                />
+              </AutoColumn>
+              <AutoColumn gap={'md'}>
+                <CurrencyInputPanel
+                  value={formattedAmounts[Field.CURRENCY_B]}
+                  onUserInput={onFieldBInput}
+                  onMax={() => {
+                    onFieldBInput(maxAmounts[Field.CURRENCY_B]?.toExact() ?? '')
+                  }}
+                  showMaxButton={!atMaxAmounts[Field.CURRENCY_B]}
+                  fiatValue={usdcValues[Field.CURRENCY_B]}
+                  currency={currencies[Field.CURRENCY_B] ?? null}
+                  id="add-liquidity-input-tokenb"
+                  showCommonBases
+                  locked={depositBDisabled}
+                />
+              </AutoColumn>
+            </DynamicSection>
+            <br />
+            <MediumOnly>
+              <Buttons />
+            </MediumOnly>
           </Wrapper>
         </PageWrapper>
         {addIsUnsupported && (

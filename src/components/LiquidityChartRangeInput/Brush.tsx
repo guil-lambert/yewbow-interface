@@ -1,5 +1,5 @@
 import { brushHandleAccentPath, brushHandlePath, OffScreenHandle } from 'components/LiquidityChartRangeInput/svg'
-import { BrushBehavior, brushX, D3BrushEvent, ScaleLinear, select } from 'd3'
+import { BrushBehavior, brushX, D3BrushEvent, ScaleLinear, scaleLinear, select } from 'd3'
 import usePrevious from 'hooks/usePrevious'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components/macro'
@@ -8,7 +8,7 @@ const Handle = styled.path<{ color: string }>`
   cursor: ew-resize;
   pointer-events: none;
 
-  stroke-width: 3;
+  stroke-width: 1;
   stroke: ${({ color }) => color};
   fill: ${({ color }) => color};
 `
@@ -38,7 +38,7 @@ const Tooltip = styled.text`
 `
 
 // flips the handles draggers when close to the container edges
-const FLIP_HANDLE_THRESHOLD_PX = 20
+const FLIP_HANDLE_THRESHOLD_PX = 50
 
 // margin to prevent tick snapping from putting the brush off screen
 const BRUSH_EXTENT_MARGIN_PX = 2
@@ -123,7 +123,7 @@ export const Brush = ({
         [Math.max(0 + BRUSH_EXTENT_MARGIN_PX, xScale(0)), 0],
         [innerWidth - BRUSH_EXTENT_MARGIN_PX, innerHeight],
       ])
-      .handleSize(50)
+      .handleSize(2.5)
       .filter(() => interactive)
       .on('brush end', brushed)
 
