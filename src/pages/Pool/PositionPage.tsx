@@ -1005,18 +1005,19 @@ export function PositionPage({
                       fillOpacity={0}
                       label={'100% ETH'}
                     />
-                    <ReferenceArea
-                      x1={Pa}
-                      x2={Pb}
-                      y1={-Math.max(...dataPayoffY) * 3}
-                      y2={Math.abs(Math.max(...dataPayoffY)) * 2}
-                      fillOpacity={0.15}
-                      fill={inRange ? '#47b247' : '#cc333f'}
+                    <ReferenceArea x1={Pa} x2={Pb} fillOpacity={0.15} fill={inRange ? '#47b247' : '#cc333f'} />
+                    <Area
+                      isAnimationActive={true}
+                      animationDuration={500}
+                      type="basis"
+                      dataKey="y"
+                      stroke="#000"
+                      fill="url(#splitColor)"
+                      activeDot={false}
                     />
-                    <Area type="basis" dataKey="y" stroke="#000" fill="url(#splitColor)" activeDot={false} />
                     <ReferenceLine y={Math.max(...dataPayoffY)} stroke="#000" strokeDasharray="1 4" />
                     <ReferenceLine y={0} stroke="#000" />
-                    <Scatter data={dataPc}>
+                    <Scatter data={dataPc} isAnimationActive={true} animationDuration={500}>
                       <LabelList
                         position="insideBottomRight"
                         offset="10"
@@ -1024,7 +1025,12 @@ export function PositionPage({
                         style={{ fontSize: '12px' }}
                       />
                     </Scatter>
-                    <Scatter data={removed ? undefined : dataPe} shape="cross">
+                    <Scatter
+                      data={removed ? undefined : dataPe}
+                      shape="cross"
+                      isAnimationActive={true}
+                      animationDuration={500}
+                    >
                       <LabelList
                         position="insideBottomRight"
                         offset="10"
@@ -1032,7 +1038,13 @@ export function PositionPage({
                         style={{ fontSize: '12px' }}
                       />
                     </Scatter>
-                    <Scatter line={{ stroke: '#000', strokeWidth: 1.5 }} data={dataPayoff} dataKey="x" />
+                    <Scatter
+                      line={{ stroke: '#000', strokeWidth: 1.5 }}
+                      data={dataPayoff}
+                      dataKey="x"
+                      isAnimationActive={true}
+                      animationDuration={500}
+                    />
                     <Tooltip
                       allowEscapeViewBox={{
                         x: true,
@@ -1155,7 +1167,7 @@ export function PositionPage({
                           {typeof ratio === 'number' && !removed ? (
                             <Badge style={{ marginLeft: '10px' }}>
                               <TYPE.main fontSize={11}>
-                                <Trans>{inverted ? ratio : 100 - ratio}%</Trans>
+                                <Trans>{inverted ? 100 - ratio : ratio}%</Trans>
                               </TYPE.main>
                             </Badge>
                           ) : null}
@@ -1170,7 +1182,7 @@ export function PositionPage({
                           {typeof ratio === 'number' && !removed ? (
                             <Badge style={{ marginLeft: '10px' }}>
                               <TYPE.main color={theme.text2} fontSize={11}>
-                                <Trans>{inverted ? 100 - ratio : ratio}%</Trans>
+                                <Trans>{inverted ? ratio : 100 - ratio}%</Trans>
                               </TYPE.main>
                             </Badge>
                           ) : null}
