@@ -74,7 +74,7 @@ export const api = createApi({
                 tick
                 liquidity
                 feeTier
-                poolDayData(first: 672, skip: 1, orderBy: date, orderDirection: desc) {
+                poolDayData(first: 672, skip: 0, orderBy: date, orderDirection: desc) {
                   volumeUSD
                   date
                   token0Price
