@@ -7,7 +7,8 @@ import { AppState } from 'state'
 
 // List of supported subgraphs. Note that the app currently only support one active subgraph at a time
 const CHAIN_SUBGRAPH_URL: Record<number, string> = {
-  [SupportedChainId.MAINNET]: 'https://api.thegraph.com/subgraphs/name/archmage-finance/uniswap-v3',
+  //[SupportedChainId.MAINNET]: 'https://api.thegraph.com/subgraphs/name/archmage-finance/uniswap-v3',
+  [SupportedChainId.MAINNET]: 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3',
   [SupportedChainId.RINKEBY]: 'https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3',
 
   [SupportedChainId.ARBITRUM_ONE]: 'https://api.thegraph.com/subgraphs/name/ianlapham/arbitrum-minimal',
@@ -44,9 +45,6 @@ export const api = createApi({
             positions(first: $num, where: { owner_contains: $owner, pool_contains: $poolAddress, id_gte: $tokenId }) {
               id
               liquidity
-              amountDepositedUSD
-              amountWithdrawnUSD
-              amountCollectedUSD
               depositedToken0
               depositedToken1
               withdrawnToken0
