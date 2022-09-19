@@ -7,7 +7,7 @@ import useCurrentBlockTimestamp from 'hooks/useCurrentBlockTimestamp'
 import JSBI from 'jsbi'
 import { ReactNode, useMemo } from 'react'
 
-import { DAI, UNI, USDC, USDT, WBTC, WETH9_EXTENDED } from '../../constants/tokens'
+import { DAI, UNI, USDC_MAINNET, USDT, WBTC, WETH9_EXTENDED } from '../../constants/tokens'
 import { useActiveWeb3React } from '../../hooks/web3'
 import { NEVER_RELOAD, useMultipleContractSingleData } from '../multicall/hooks'
 import { tryParseAmount } from '../swap/hooks'
@@ -30,7 +30,7 @@ export const STAKING_REWARDS_INFO: {
       stakingRewardAddress: '0xa1484C3aa22a66C62b77E0AE78E15258bd0cB711',
     },
     {
-      tokens: [WETH9_EXTENDED[1], USDC],
+      tokens: [WETH9_EXTENDED[1], USDC_MAINNET],
       stakingRewardAddress: '0x7FBa4B8Dc5E7616e59622806932DBea72537A56b',
     },
     {

@@ -359,7 +359,7 @@ export function PositionPage({
   )
 
   const removed = liquidity?.eq(0)
-  const ETHp = useUSDCPrice(WETH9_EXTENDED[1] ?? undefined)
+  const ETHp = useUSDCPrice(WETH9_EXTENDED[chainId ?? 1] ?? undefined)
   const ETHprice = ETHp ? ETHp.toFixed(2) : '1'
 
   const token0 = useToken(token0Address)

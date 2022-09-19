@@ -1,6 +1,7 @@
 import ethereumLogoUrl from 'assets/images/ethereum-logo.png'
 import arbitrumLogoUrl from 'assets/svg/arbitrum_logo.svg'
 import optimismLogoUrl from 'assets/svg/optimistic_ethereum.svg'
+import polygonMaticLogo from 'assets/svg/polygon-matic-logo.svg'
 import ms from 'ms.macro'
 
 export enum SupportedChainId {
@@ -14,6 +15,9 @@ export enum SupportedChainId {
   ARBITRUM_RINKEBY = 421611,
   OPTIMISM = 10,
   OPTIMISTIC_KOVAN = 69,
+
+  POLYGON = 137,
+  POLYGON_MUMBAI = 80001,
 }
 
 export const ALL_SUPPORTED_CHAIN_IDS: SupportedChainId[] = [
@@ -27,6 +31,8 @@ export const ALL_SUPPORTED_CHAIN_IDS: SupportedChainId[] = [
   SupportedChainId.ARBITRUM_RINKEBY,
   SupportedChainId.OPTIMISM,
   SupportedChainId.OPTIMISTIC_KOVAN,
+  SupportedChainId.POLYGON,
+  SupportedChainId.POLYGON_MUMBAI,
 ]
 
 export const L1_CHAIN_IDS = [
@@ -44,6 +50,8 @@ export const L2_CHAIN_IDS = [
   SupportedChainId.ARBITRUM_RINKEBY,
   SupportedChainId.OPTIMISM,
   SupportedChainId.OPTIMISTIC_KOVAN,
+  SupportedChainId.POLYGON,
+  SupportedChainId.POLYGON_MUMBAI,
 ] as const
 
 export type SupportedL2ChainId = typeof L2_CHAIN_IDS[number]
@@ -154,6 +162,26 @@ export const CHAIN_INFO: ChainInfo = {
     logoUrl: optimismLogoUrl,
     nativeCurrency: { name: 'Optimistic kovETH', symbol: 'kovOpETH', decimals: 18 },
     statusPage: 'https://optimism.io/status',
+  },
+  [SupportedChainId.POLYGON]: {
+    blockWaitMsBeforeWarning: ms`10m`,
+    bridge: 'https://wallet.polygon.technology/bridge',
+    docs: 'https://polygon.io/',
+    explorer: 'https://polygonscan.com/',
+    infoLink: 'https://info.uniswap.org/#/polygon/',
+    label: 'Polygon',
+    logoUrl: polygonMaticLogo,
+    nativeCurrency: { name: 'Polygon Matic', symbol: 'MATIC', decimals: 18 },
+  },
+  [SupportedChainId.POLYGON_MUMBAI]: {
+    blockWaitMsBeforeWarning: ms`10m`,
+    bridge: 'https://wallet.polygon.technology/bridge',
+    docs: 'https://polygon.io/',
+    explorer: 'https://mumbai.polygonscan.com/',
+    infoLink: 'https://info.uniswap.org/#/polygon/',
+    label: 'Polygon Mumbai',
+    logoUrl: polygonMaticLogo,
+    nativeCurrency: { name: 'Polygon Mumbai Matic', symbol: 'mMATIC', decimals: 18 },
   },
 }
 

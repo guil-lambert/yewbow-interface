@@ -132,7 +132,7 @@ const ResponsiveRow = styled(RowFixed)`
 
 export default function Pool() {
   const { account, chainId } = useActiveWeb3React()
-  const ETHprice = useUSDCPrice(WETH9_EXTENDED[1] ?? undefined)
+  const ETHprice = useUSDCPrice(WETH9_EXTENDED[chainId ?? 1] && undefined)
   const toggleWalletModal = useWalletModalToggle()
   const acct = localStorage.getItem('account')
 
