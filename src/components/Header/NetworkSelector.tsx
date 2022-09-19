@@ -145,12 +145,16 @@ const BridgeText = ({ chainId }: { chainId: SupportedL2ChainId }) => {
     case SupportedChainId.OPTIMISM:
     case SupportedChainId.OPTIMISTIC_KOVAN:
       return <Trans>Optimism Gateway</Trans>
+    case SupportedChainId.POLYGON:
+      return <Trans>Polygon Bridge</Trans>
     default:
       return <Trans>Bridge</Trans>
   }
 }
 const ExplorerText = ({ chainId }: { chainId: SupportedL2ChainId }) => {
   switch (chainId) {
+    case SupportedChainId.POLYGON:
+      return <Trans>Polygonscan</Trans>
     case SupportedChainId.ARBITRUM_ONE:
     case SupportedChainId.ARBITRUM_RINKEBY:
       return <Trans>Arbiscan</Trans>
@@ -242,6 +246,7 @@ export default function NetworkSelector() {
           <Row targetChain={SupportedChainId.MAINNET} />
           <Row targetChain={SupportedChainId.OPTIMISM} />
           <Row targetChain={SupportedChainId.ARBITRUM_ONE} />
+          <Row targetChain={SupportedChainId.POLYGON} />
         </FlyoutMenu>
       )}
     </SelectorWrapper>
