@@ -8,7 +8,9 @@ import { AppState } from 'state'
 // List of supported subgraphs. Note that the app currently only support one active subgraph at a time
 const CHAIN_SUBGRAPH_URL: Record<number, string> = {
   //[SupportedChainId.MAINNET]: 'https://api.thegraph.com/subgraphs/name/archmage-finance/uniswap-v3',
-  [SupportedChainId.MAINNET]: 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3',
+  [SupportedChainId.MAINNET]:
+    'https://api.goldsky.com/api/public/project_cl9gc21q105380hxuh8ks53k3/subgraphs/archmage-univ3/0.0.1/gn',
+  //[SupportedChainId.MAINNET]: 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3',
   [SupportedChainId.RINKEBY]: 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3',
 
   [SupportedChainId.ARBITRUM_ONE]: 'https://api.thegraph.com/subgraphs/name/ianlapham/arbitrum-minimal',
@@ -55,6 +57,9 @@ export const api = createApi({
               collectedFeesToken1
               feeGrowthInside0LastX128
               feeGrowthInside1LastX128
+              amountDepositedUSD
+              amountWithdrawnUSD
+              amountCollectedUSD
               transaction {
                 timestamp
               }
